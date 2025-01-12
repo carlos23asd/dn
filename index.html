@@ -1,302 +1,681 @@
-<html><head><base href="." /><title>DN STREAMING</title>
-<meta charset="UTF-8">
-<script src="https://cdn.jsdelivr.net/npm/flv.js@1.6.2/dist/flv.min.js"></script>
-<style>
-  body {
-    background: #1a1a1a;
-    color: white;
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
+<html><head><base href="https://example.com">
+  <title>Reproductor de Video con HLS</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #1a1a1a;
+      color: white;
+      font-family: Arial, sans-serif;
+      -webkit-user-select: none;
+      -moz-user-select: none; 
+      -ms-user-select: none;
+      user-select: none;
+    }
+    
+    .video-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      display: block;
+    }
+    
+    video {
+      width: 100%;
+      height: auto;
+    }
+    
+    .controls {
+      padding: 15px;
+      background: #333;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    button {
+      background: #4CAF50;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    button:hover {
+      background: #45a049;
+    }
+    
+    select {
+      padding: 6px;
+      border-radius: 4px;
+      background: #444;
+      color: white;
+      border: 1px solid #666;
+    }
 
-  .login-container {
-    background: #2a2a2a;
-    padding: 30px;
-    border-radius: 10px;
-    width: 300px;
-    text-align: center;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-  }
+    .playlist-container {
+      display: block;
+      margin-top: 20px;
+      background: #333;
+      padding: 15px;
+      border-radius: 8px;
+    }
 
-  .login-container input {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 5px;
-    border: 1px solid #444;
-    background: #3a3a3a;
-    color: white;
-  }
+    .playlist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #444;
+      border-radius: 4px;
+    }
 
-  .login-container button {
-    background: #4a4a4a;
-    border: none;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s;
-  }
+    .playlist-item button {
+      padding: 4px 8px;
+    }
 
-  .login-container button:hover {
-    background: #666;
-  }
+    .stream-status {
+      margin-top: 20px;
+      background: #333;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #444;
+      border-radius: 4px;
+    }
+    
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    
+    .status-good {
+      background: #4CAF50;
+    }
+    
+    .status-slow {
+      background: #FFA726;
+    }
+    
+    .status-error {
+      background: #f44336;
+    }
+    
+    .status-details {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .status-name {
+      font-weight: bold;
+    }
+    
+    .status-message {
+      font-size: 0.9em;
+      color: #aaa;
+    }
+    
+    .viewer-count {
+      text-align: center;
+      background: #333;
+      padding: 10px;
+      margin-top: 20px;
+      border-radius: 8px;
+      color: white;
+    }
+    
+    .tv-focus {
+      outline: 3px solid yellow;
+      background-color: rgba(255, 255, 0, 0.2);
+    }
 
-  #content {
-    display: none;
-  }
+    .tv-navigation {
+      text-align: center;
+      background: #333;
+      color: white;
+      padding: 10px;
+      margin-top: 20px;
+      border-radius: 8px;
+    }
+    .playlist-name {
+      cursor: pointer;
+    }
+    
+    /* Add login styles */
+    .login-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
 
-  .player-container {
-    max-width: 800px;
-    width: 100%;
-    background: #2a2a2a;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-  }
+    .login-box {
+      background: #333;
+      padding: 30px;
+      border-radius: 8px;
+      text-align: center;
+    }
 
-  video {
-    width: 100%;
-    border-radius: 5px;
-  }
+    .login-box input {
+      padding: 8px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border: 1px solid #666;
+      background: #444;
+      color: white;
+    }
 
-  .controls {
-    margin-top: 15px;
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-  }
+    .login-box button {
+      margin-top: 10px;
+      width: 100%;
+    }
 
-  button {
-    background: #4a4a4a;
-    border: none;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s;
-  }
-
-  button:hover {
-    background: #666;
-  }
-
-  .status {
-    margin-top: 10px;
-    text-align: center;
-    color: #aaa;
-  }
-
-  .channel-list {
-    margin-top: 20px;
-    background: #2a2a2a;
-    padding: 15px;
-    border-radius: 10px;
-    max-width: 800px;
-    width: 100%;
-  }
-
-  .channel-list ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .channel-list li {
-    background: #3a3a3a;
-    margin: 10px 0;
-    padding: 10px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s;
-  }
-
-  .channel-list li:hover {
-    background: #4a4a4a;
-  }
-
-  #error-message {
-    color: red;
-    margin-top: 10px;
-  }
-</style>
+    .hidden {
+      display: none !important;
+    }
+    
+    .main-content {
+      display: none;
+    }
+    
+    .main-content.visible {
+      display: block;
+    }
+  </style>
 </head>
 <body>
-  <div id="login-screen" class="login-container">
-    <h2>Iniciar Sesión</h2>
-    <input type="password" id="password-input" placeholder="Ingrese la contraseña">
-    <button onclick="checkPassword()">Entrar</button>
-    <div id="error-message"></div>
+  <div id="loginContainer" class="login-container">
+    <div class="login-box">
+      <h2>Iniciar Sesi&#xf3;n</h2>
+      <input type="password" id="passwordInput" placeholder="Contrase&#xf1;a">
+      <button onclick="checkPassword()">Ingresar</button>
+    </div>
   </div>
-
-  <div id="content">
-    <div class="player-container">
-      <video id="videoElement" controls></video>
-      <div class="controls">
-        <button onclick="startPlay()">Play</button>
-        <button onclick="stopPlay()">Stop</button>
-        <button onclick="reloadPlayer()">Reload</button>
+  <div class="main-content">
+    <div class="video-section">
+      <div class="video-container" id="videoContainer">
+        <video id="video" controls></video>
+        <div class="controls">
+          <button id="playPause">Play/Pause</button>
+          <select id="quality">
+            <option value>Calidad Auto</option>
+          </select>
+          <button id="fullscreen">Pantalla Completa</button>
+        </div>
       </div>
-      <div class="status" id="status">Estado: Esperando para reproducir</div>
-    </div>
 
-    <div class="channel-list">
-      <h3>Lista de Canales</h3>
-      <ul id="channelList">
-        <!-- Channels will be dynamically added here -->
-      </ul>
+      <div id="playlistContainer" class="playlist-container">
+        <h3>Lista de Reproductores</h3>
+        <div id="playlistItems"></div>
+      </div>
+      <div class="viewer-count">
+        Viewer Count: <span id="viewerCount">0</span>
+      </div>
+    </div>
+    <div id="tv-navigation" class="tv-navigation">
+      <div class="navigation-instructions">
+        &#x25b2; Subir | &#x25bc; Bajar | OK Seleccionar
+      </div>
     </div>
   </div>
-
-<script>
-  let flvPlayer = null;
-  const INACTIVITY_TIMEOUT = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
-  const channels = [
-    { id: 1, name: 'Los Simpson', url: 'https://stream-cdn-iad2.vaughnsoft.net/play/live_simpson_maniahd193.flv' },
-    { id: 2, name: 'Canal Win+', url: 'https://ca8s9.pricesaskeloadsc.com/winplusonline1/tracks-v1a1/mono.m3u8?token=7e59c4d61a87f13eae2847223754eccac5f7afa5-a2-1736697612-1736661612' },
-    { id: 3, name: 'Noticias en Vivo', url: 'https://example.com/news-stream.flv' },
-    { id: 4, name: 'Canal Musical', url: 'https://example.com/music-stream.flv' },
-    { id: 5, name: 'Canal de Documentales', url: 'https://example.com/documentary-stream.flv' }
-  ];
-
-  // Track user activity
-  let lastActivityTime = null;
-
-  // Add event listeners for user activity
-  function resetActivityTimer() {
-    lastActivityTime = Date.now();
-    localStorage.setItem('lastActivityTime', lastActivityTime);
+  <script>let videoUrls = [{
+  name: 'Stream Principal',
+  url: 'https://stream.gia.tv/giatv/giatv-Gary2CanalGary2Canal/Gary2CanalGary2Canal/chunks.m3u8'
+}, {
+  name: 'Win+',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}, {
+  name: 'ESPN',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}, {
+  name: 'ESPN 2',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}, {
+  name: 'ESPN 3',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}, {
+  name: 'ESPN 4',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}, {
+  name: 'ESPN EXTRA',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}, {
+  name: 'ESPN Premium',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}, {
+  name: 'Directv',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}, {
+  name: 'Solo eventos',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}];
+let currentHls = null;
+let streamStatuses = {};
+let viewerCount = 0;
+const TV_KEYS = {
+  UP: 38,
+  DOWN: 40,
+  OK: 13
+};
+const VIDEO_CONTROLS = {
+  PLAY_PAUSE: 0,
+  QUALITY: 1,
+  FULLSCREEN: 2
+};
+let currentTVFocus = {
+  section: 'playlist',
+  index: 0
+};
+const STREAM_OPTIMIZATION_CONFIG = {
+  lowLatencyMode: true,
+  dynamicBufferAdjustment: true
+};
+let isLoggedIn = false;
+function generateDeviceId() {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+function playUrl(url) {
+  if (currentHls) {
+    currentHls.destroy();
   }
-
-  // Check inactivity on various user interactions
-  ['mousemove', 'keydown', 'click', 'scroll'].forEach(event => {
-    document.addEventListener(event, resetActivityTimer);
+  const video = document.getElementById('video');
+  const qualitySelect = document.getElementById('quality');
+  qualitySelect.innerHTML = '<option value="">Calidad Auto</option>';
+  currentHls = new Hls({
+    maxBufferLength: 30,
+    maxBufferSize: 30 * 1000 * 1000,
+    fragLoadingMaxRetry: 2,
+    liveSyncDuration: 30,
+    liveMaxLatencyDuration: 45,
+    enableWorker: true,
+    backBufferLength: 10
   });
-
-  // Check login status and inactivity on page load
-  document.addEventListener('DOMContentLoaded', () => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    lastActivityTime = parseInt(localStorage.getItem('lastActivityTime') || '0');
-    
-    // Check if logged in and not inactive
-    if (isLoggedIn && (Date.now() - lastActivityTime < INACTIVITY_TIMEOUT)) {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('content').style.display = 'block';
-      
-      // Initialize content after successful login
-      setupPlayer(channels[0].url);
-      populateChannelList();
-      
-      // Reset activity timer
-      resetActivityTimer();
-    } else {
-      // Clear login status if inactive
-      localStorage.removeItem('isLoggedIn');
+  currentHls.config.enableMetadata = false;
+  currentHls.loadSource(url);
+  currentHls.attachMedia(video);
+  currentHls.on(Hls.Events.ERROR, function (event, data) {
+    const streamIndex = videoUrls.findIndex(item => item.url === url);
+    if (streamIndex !== -1) {
+      streamStatuses[url] = {
+        status: 'error',
+        message: `Error: ${data.type} - ${data.details}`
+      };
+      updateStreamStatus();
     }
   });
-
-  function checkPassword() {
-    const passwordInput = document.getElementById('password-input');
-    const errorMessage = document.getElementById('error-message');
-    const loginScreen = document.getElementById('login-screen');
-    const content = document.getElementById('content');
-
-    if (passwordInput.value === '1344') {
-      // Set login status in localStorage
-      localStorage.setItem('isLoggedIn', 'true');
-      
-      loginScreen.style.display = 'none';
-      content.style.display = 'block';
-      errorMessage.textContent = '';
-      
-      // Initialize content after successful login
-      setupPlayer(channels[0].url);
-      populateChannelList();
-      
-      // Reset activity timer
-      resetActivityTimer();
-    } else {
-      errorMessage.textContent = 'Contraseña incorrecta. Intente de nuevo.';
-      passwordInput.value = '';
-    }
-  }
-
-  function setupPlayer(url) {
-    if (flvjs.isSupported()) {
-      // Destroy existing player if it exists
-      if (flvPlayer) {
-        stopPlay();
+  currentHls.on(Hls.Events.FRAG_LOADED, function (event, data) {
+    const loadTime = data.stats.loading.end - data.stats.loading.start;
+    const streamIndex = videoUrls.findIndex(item => item.url === url);
+    if (streamIndex !== -1) {
+      if (loadTime > 2000) {
+        streamStatuses[url] = {
+          status: 'slow',
+          message: 'ReproducciÃ³n lenta - Alta latencia'
+        };
+      } else {
+        streamStatuses[url] = {
+          status: 'good',
+          message: 'ReproducciÃ³n estable'
+        };
       }
-
-      const videoElement = document.getElementById('videoElement');
-      flvPlayer = flvjs.createPlayer({
-        type: 'flv',
-        url: url,
-        isLive: true,
-        hasAudio: true,
-        hasVideo: true
-      });
-      flvPlayer.attachMediaElement(videoElement);
-      flvPlayer.load();
-
-      // Event listeners
-      flvPlayer.on(flvjs.Events.ERROR, (errorType, errorDetail) => {
-        document.getElementById('status').textContent = `Error: ${errorType} - ${errorDetail}`;
-      });
-
-      videoElement.addEventListener('playing', () => {
-        document.getElementById('status').textContent = 'Estado: Reproduciendo';
-      });
-
-      videoElement.addEventListener('waiting', () => {
-        document.getElementById('status').textContent = 'Estado: Buffering...';
-      });
-
-      videoElement.addEventListener('error', (e) => {
-        document.getElementById('status').textContent = `Error de video: ${e.message}`;
-      });
-
-      flvPlayer.play();
+      updateStreamStatus();
     }
-  }
-
-  function startPlay() {
-    if (!flvPlayer) {
-      setupPlayer(channels[0].url);
-    } else {
-      flvPlayer.play();
-    }
-    document.getElementById('status').textContent = 'Estado: Iniciando reproducción...';
-  }
-
-  function stopPlay() {
-    if (flvPlayer) {
-      flvPlayer.pause();
-      flvPlayer.unload();
-      flvPlayer.detachMediaElement();
-      flvPlayer.destroy();
-      flvPlayer = null;
-      document.getElementById('status').textContent = 'Estado: Detenido';
-    }
-  }
-
-  function reloadPlayer() {
-    stopPlay();
-    setupPlayer(channels[0].url);
-  }
-
-  function populateChannelList() {
-    const channelList = document.getElementById('channelList');
-    channels.forEach(channel => {
-      const li = document.createElement('li');
-      li.textContent = `${channel.id}. ${channel.name}`;
-      li.addEventListener('click', () => setupPlayer(channel.url));
-      channelList.appendChild(li);
+  });
+  currentHls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+    const qualities = data.levels.map((level, index) => ({
+      index: index,
+      resolution: `${level.width}x${level.height}`,
+      bitrate: level.bitrate
+    }));
+    qualities.forEach(quality => {
+      const option = document.createElement('option');
+      option.value = quality.index;
+      option.text = `${quality.resolution} (${Math.round(quality.bitrate / 1000)} kbps)`;
+      qualitySelect.appendChild(option);
     });
+    currentHls.currentLevel = Math.min(1, currentHls.levels.length - 1);
+    video.play();
+  });
+}
+function updatePlaylist() {
+  const container = document.getElementById('playlistItems');
+  container.innerHTML = '';
+  videoUrls.forEach((item, index) => {
+    const playlistItem = document.createElement('div');
+    playlistItem.className = 'playlist-item';
+    const playButton = document.createElement('button');
+    playButton.textContent = 'Reproducir';
+    playButton.onclick = () => {
+      playUrl(item.url);
+      setTimeout(() => {
+        document.getElementById('video').play();
+      }, 500);
+    };
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'playlist-name';
+    nameSpan.textContent = item.name;
+    nameSpan.onclick = () => {
+      playUrl(item.url);
+      setTimeout(() => {
+        document.getElementById('video').play();
+      }, 500);
+    };
+    playlistItem.appendChild(playButton);
+    playlistItem.appendChild(nameSpan);
+    container.appendChild(playlistItem);
+  });
+  updateStreamStatus();
+}
+function initializeVideo() {
+  const video = document.getElementById('video');
+  const playPauseBtn = document.getElementById('playPause');
+  const qualitySelect = document.getElementById('quality');
+  const fullscreenBtn = document.getElementById('fullscreen');
+  playUrl(videoUrls[0].url);
+  playPauseBtn.addEventListener('click', function () {
+    if (video.paused) {
+      video.play();
+    } else {
+      video.pause();
+    }
+  });
+  fullscreenBtn.addEventListener('click', function () {
+    if (!document.fullscreenElement) {
+      if (video.requestFullscreen) {
+        video.requestFullscreen();
+      } else if (video.webkitRequestFullscreen) {
+        video.webkitRequestFullscreen();
+      } else if (video.msRequestFullscreen) {
+        video.msRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    }
+  });
+  video.addEventListener('play', () => {
+    playPauseBtn.textContent = 'Pause';
+  });
+  video.addEventListener('pause', () => {
+    playPauseBtn.textContent = 'Play';
+  });
+  qualitySelect.addEventListener('change', function () {
+    if (currentHls) {
+      if (this.value === '') {
+        currentHls.currentLevel = -1;
+      } else {
+        const selectedLevel = Number(this.value);
+        currentHls.currentLevel = selectedLevel;
+        console.log(`Selected quality: ${currentHls.levels[selectedLevel].height}p`);
+      }
+    }
+  });
+  document.addEventListener('keydown', event => {
+    switch (event.key) {
+      case 'ArrowUp':
+        break;
+      case 'ArrowDown':
+        break;
+      case 'ArrowLeft':
+        break;
+      case 'ArrowRight':
+        break;
+      case 'Enter':
+        if (video.paused) {
+          video.play();
+        } else {
+          video.pause();
+        }
+        break;
+      case 'Escape':
+        if (document.fullscreenElement) {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+          }
+        }
+        break;
+      default:
+        break;
+    }
+  });
+}
+function updateStreamStatus() {
+  const container = document.getElementById('playlistContainer');
+  let statusContainer = document.querySelector('.stream-status');
+  if (!statusContainer) {
+    statusContainer = document.createElement('div');
+    statusContainer.className = 'stream-status';
+    statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
+    container.appendChild(statusContainer);
   }
+  const statusContent = document.createElement('div');
+  videoUrls.forEach(item => {
+    const status = streamStatuses[item.url] || {
+      status: 'unknown',
+      message: 'No reproducido aÃºn'
+    };
+    const statusItem = document.createElement('div');
+    statusItem.className = 'status-item';
+    const indicator = document.createElement('div');
+    indicator.className = `status-indicator status-${status.status}`;
+    const details = document.createElement('div');
+    details.className = 'status-details';
+    const name = document.createElement('div');
+    name.className = 'status-name';
+    name.textContent = item.name;
+    const message = document.createElement('div');
+    message.className = 'status-message';
+    message.textContent = status.message;
+    details.appendChild(name);
+    details.appendChild(message);
+    statusItem.appendChild(indicator);
+    statusItem.appendChild(details);
+    statusContent.appendChild(statusItem);
+  });
+  statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
+  statusContainer.appendChild(statusContent);
+}
+function initializeVideoPage() {
+  document.body.onmousedown = function (e) {
+    if (e.button === 0) {
+      e.preventDefault();
+      return false;
+    }
+  };
+  
+  document.getElementById('videoContainer').style.display = 'block';
+  initializeVideo();
+  updatePlaylist();
+  viewerCount++;
+  updateViewerCount();
+  document.addEventListener('keydown', handleTVNavigation);
+  document.querySelector('.main-content').style.display = 'block';
+}
+function checkReferrer() {
+  return isLoggedIn;
+}
+function getCurrentUser() {
+  return 'default';
+}
+function updateViewerCount() {
+  let viewerCountContainer = document.getElementById('viewerCountContainer');
+  if (!viewerCountContainer) {
+    viewerCountContainer = document.createElement('div');
+    viewerCountContainer.id = 'viewerCountContainer';
+    viewerCountContainer.className = 'viewer-count';
+    document.querySelector('.main-content').appendChild(viewerCountContainer);
+  }
+  viewerCountContainer.textContent = `Personas viendo: ${viewerCount}`;
+}
+function handleTVNavigation(event) {
+  document.body.onmousedown = function (e) {
+    if (e.button === 0) {
+      e.preventDefault(); 
+      return false;
+    }
+  };
+
+  // Get references to DOM elements
+  const playlistItems = document.querySelectorAll('.playlist-item');
+  const videoPlayer = document.getElementById('video');
+  const controls = document.querySelectorAll('.controls button, .controls select');
+
+  // Only handle navigation if elements exist
+  if (!playlistItems.length || !videoPlayer || !controls.length) {
+    return;
+  }
+
+  const navigationSections = ['playlist', 'videoPlayer', 'controls'];
+
+  switch (event.keyCode) {
+    case TV_KEYS.UP:
+      navigateUp(playlistItems, videoPlayer, controls);
+      break;
+    case TV_KEYS.DOWN:
+      navigateDown(playlistItems, videoPlayer, controls);
+      break;
+    case TV_KEYS.OK:
+      selectCurrentItem(playlistItems, videoPlayer, controls);
+      break;
+  }
+}
+function navigateUp(playlistItems, videoPlayer, controls) {
+  if (currentTVFocus.section === 'playlist' && currentTVFocus.index > 0) {
+    currentTVFocus.index--;
+    highlightCurrentItem(playlistItems, videoPlayer, controls);
+  } else if (currentTVFocus.section === 'videoPlayer') {
+    currentTVFocus.section = 'playlist';
+    currentTVFocus.index = playlistItems.length - 1;
+    highlightCurrentItem(playlistItems, videoPlayer, controls);
+  } else if (currentTVFocus.section === 'controls') {
+    currentTVFocus.section = 'videoPlayer';
+    currentTVFocus.index = 0;
+    highlightCurrentItem(playlistItems, videoPlayer, controls);
+  }
+}
+function navigateDown(playlistItems, videoPlayer, controls) {
+  if (currentTVFocus.section === 'playlist' && currentTVFocus.index < playlistItems.length - 1) {
+    currentTVFocus.index++;
+    highlightCurrentItem(playlistItems, videoPlayer, controls);
+  } else if (currentTVFocus.section === 'playlist' && currentTVFocus.index === playlistItems.length - 1) {
+    currentTVFocus.section = 'videoPlayer';
+    currentTVFocus.index = 0;
+    highlightCurrentItem(playlistItems, videoPlayer, controls);
+  } else if (currentTVFocus.section === 'videoPlayer') {
+    currentTVFocus.section = 'controls';
+    currentTVFocus.index = 0;
+    highlightCurrentItem(playlistItems, videoPlayer, controls);
+  }
+}
+function selectCurrentItem(playlistItems, videoPlayer, controls) {
+  // Guard against undefined elements
+  if (!playlistItems?.length || !videoPlayer || !controls?.length) {
+    return;
+  }
+
+  if (currentTVFocus.section === 'playlist' && playlistItems[currentTVFocus.index]) {
+    const playButton = playlistItems[currentTVFocus.index].querySelector('button');
+    if (playButton) {
+      playButton.click();
+    }
+  } else if (currentTVFocus.section === 'videoPlayer') {
+    if (videoPlayer.paused) {
+      videoPlayer.play();
+    } else {
+      videoPlayer.pause();
+    }
+  } else if (currentTVFocus.section === 'controls' && controls[currentTVFocus.index]) {
+    controls[currentTVFocus.index].click();
+  }
+}
+function highlightCurrentItem(playlistItems, videoPlayer, controls) {
+  // Guard against undefined elements
+  if (!playlistItems?.length || !videoPlayer || !controls?.length) {
+    return;
+  }
+
+  // Remove focus from all elements
+  playlistItems.forEach(item => item.classList.remove('tv-focus'));
+  videoPlayer.classList.remove('tv-focus');
+  controls.forEach(control => control.classList.remove('tv-focus'));
+
+  // Add focus to current element
+  if (currentTVFocus.section === 'playlist' && playlistItems[currentTVFocus.index]) {
+    playlistItems[currentTVFocus.index].classList.add('tv-focus');
+  } else if (currentTVFocus.section === 'videoPlayer') {
+    videoPlayer.classList.add('tv-focus');
+  } else if (currentTVFocus.section === 'controls' && controls[currentTVFocus.index]) {
+    controls[currentTVFocus.index].classList.add('tv-focus');
+  }
+}
+function checkPassword() {
+  const password = document.getElementById('passwordInput').value;
+  if (password === '1344') {
+    isLoggedIn = true;
+    
+    // Hide login container
+    document.getElementById('loginContainer').classList.add('hidden');
+    
+    // Show main content explicitly
+    const mainContent = document.querySelector('.main-content');
+    mainContent.classList.add('visible');
+    
+    // Ensure video container is displayed
+    const videoContainer = document.getElementById('videoContainer');
+    videoContainer.style.display = 'block';
+    
+    // Ensure playlist container is displayed
+    const playlistContainer = document.getElementById('playlistContainer');
+    playlistContainer.style.display = 'block';
+    
+    // Initialize video page
+    initializeVideoPage();
+  } else {
+    alert('Contraseña incorrecta');
+    document.getElementById('passwordInput').value = '';
+  }
+}
+document.getElementById('passwordInput').addEventListener('keypress', function (e) {
+  if (e.key === 'Enter') {
+    checkPassword();
+  }
+});
+document.addEventListener('keydown', handleTVNavigation);
+document.addEventListener('contextmenu', function (e) {
+  e.preventDefault();
+  return false;
+});
 </script>
-</body></html>
+</body>
+</html>
