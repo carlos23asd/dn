@@ -1,4 +1,4 @@
-<html><head><base href="." /><title>FLV Streaming Player with Login</title>
+<html><head><base href="." /><title>DN STREAMING</title>
 <meta charset="UTF-8">
 <script src="https://cdn.jsdelivr.net/npm/flv.js@1.6.2/dist/flv.min.js"></script>
 <style>
@@ -154,6 +154,7 @@
 
 <script>
   let flvPlayer = null;
+  const INACTIVITY_TIMEOUT = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
   const channels = [
     { id: 1, name: 'Los Simpson', url: 'https://stream-cdn-iad2.vaughnsoft.net/play/live_simpson_maniahd193.flv' },
     { id: 2, name: 'Canal Deportivo', url: 'https://example.com/sports-stream.flv' },
@@ -162,17 +163,39 @@
     { id: 5, name: 'Canal de Documentales', url: 'https://example.com/documentary-stream.flv' }
   ];
 
-  // Check login status on page load
+  // Track user activity
+  let lastActivityTime = null;
+
+  // Add event listeners for user activity
+  function resetActivityTimer() {
+    lastActivityTime = Date.now();
+    localStorage.setItem('lastActivityTime', lastActivityTime);
+  }
+
+  // Check inactivity on various user interactions
+  ['mousemove', 'keydown', 'click', 'scroll'].forEach(event => {
+    document.addEventListener(event, resetActivityTimer);
+  });
+
+  // Check login status and inactivity on page load
   document.addEventListener('DOMContentLoaded', () => {
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    lastActivityTime = parseInt(localStorage.getItem('lastActivityTime') || '0');
     
-    if (isLoggedIn) {
+    // Check if logged in and not inactive
+    if (isLoggedIn && (Date.now() - lastActivityTime < INACTIVITY_TIMEOUT)) {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('content').style.display = 'block';
       
       // Initialize content after successful login
       setupPlayer(channels[0].url);
       populateChannelList();
+      
+      // Reset activity timer
+      resetActivityTimer();
+    } else {
+      // Clear login status if inactive
+      localStorage.removeItem('isLoggedIn');
     }
   });
 
@@ -193,6 +216,9 @@
       // Initialize content after successful login
       setupPlayer(channels[0].url);
       populateChannelList();
+      
+      // Reset activity timer
+      resetActivityTimer();
     } else {
       errorMessage.textContent = 'Contraseña incorrecta. Intente de nuevo.';
       passwordInput.value = '';
