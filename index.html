@@ -209,12 +209,10 @@
   <div class="bot-log" id="botLog"></div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
+<script>document.addEventListener('DOMContentLoaded', function () {
   function checkReferrer() {
     const allowedOrigin = "https://carlos23asd.github.io/dn1/";
     const referrer = document.referrer;
-    
     if (!referrer.startsWith(allowedOrigin)) {
       document.getElementById('accessDenied').style.display = 'flex';
       document.querySelector('.main-container').style.display = 'none';
@@ -223,25 +221,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     return true;
   }
-
   if (!checkReferrer()) {
-    return; 
+    return;
   }
-
   const video = document.getElementById('video-player');
   const playlistItems = document.querySelectorAll('.playlist-item');
   const botLog = document.getElementById('botLog');
-  
-  document.addEventListener('contextmenu', function(e) {
+  document.addEventListener('contextmenu', function (e) {
     e.preventDefault();
   });
-  
-  document.addEventListener('mousedown', function(e) {
+  document.addEventListener('mousedown', function (e) {
     if (e.button === 0) {
       e.preventDefault();
     }
   });
-
   function logMessage(message, isSuccess) {
     const entry = document.createElement('div');
     entry.className = `log-entry ${isSuccess ? 'log-success' : 'log-error'}`;
@@ -249,15 +242,17 @@ document.addEventListener('DOMContentLoaded', function() {
     botLog.appendChild(entry);
     botLog.scrollTop = botLog.scrollHeight;
   }
-
   async function checkStream(url) {
     try {
       const response = await fetch(url, {
         method: 'HEAD',
         headers: {
           'User-Agent': 'StreamGuard/1.0',
+          'X-Stream-Guard': 'enabled',
+          'X-Stream-Guard-Version': '1.0',
+          'X-Stream-Guard-Permission': 'granted',
           'Referer': 'about:blank',
-          'Origin': null,
+          'Origin': null
         },
         mode: 'cors',
         credentials: 'omit'
@@ -267,32 +262,27 @@ document.addEventListener('DOMContentLoaded', function() {
       return false;
     }
   }
-
   async function measureConnectionSpeed() {
     const startTime = performance.now();
-    const testFile = 'https://www.google.com/images/phd/px.gif'; 
+    const testFile = 'https://www.google.com/images/phd/px.gif';
     try {
       const response = await fetch(testFile);
       const endTime = performance.now();
       const duration = endTime - startTime;
-      const speed = (response.headers.get('content-length') * 8) / (duration / 1000); 
+      const speed = response.headers.get('content-length') * 8 / (duration / 1000);
       return speed;
     } catch (error) {
       console.error('Error measuring speed:', error);
-      return 1000000; 
+      return 1000000;
     }
   }
-
-  window.checkAllStreams = async function() {
+  window.checkAllStreams = async function () {
     logMessage('Iniciando verificación de streams...', true);
-    
     for (const item of playlistItems) {
       const url = item.getAttribute('data-src');
       const channelName = item.textContent.trim().split(' ')[0];
       const statusIndicator = item.querySelector('.status-indicator');
-      
       logMessage(`Verificando canal: ${channelName}...`, true);
-      
       try {
         const isWorking = await checkStream(url);
         statusIndicator.className = `status-indicator ${isWorking ? 'status-online' : 'status-offline'}`;
@@ -302,29 +292,30 @@ document.addEventListener('DOMContentLoaded', function() {
         logMessage(`Error al verificar ${channelName}: ${error.message}`, false);
       }
     }
-    
     logMessage('Verificación completada', true);
-  }
-
+  };
   const securityConfig = {
     enableStreamGuard: true,
+    streamGuardVersion: '1.0',
+    streamGuardPermission: 'granted',
     maskUserAgent: true,
     hideReferrer: true
   };
-
   function cleanupResources() {
     if (window.gc) {
       window.gc();
     }
     performance.clearResourceTimings();
   }
-
   function setupStreamGuard() {
     const originalFetch = window.fetch;
-    window.fetch = function(...args) {
+    window.fetch = function (...args) {
       if (args[1] && args[1].headers) {
         args[1].headers = new Headers({
           'User-Agent': 'StreamGuard/1.0',
+          'X-Stream-Guard': 'enabled',
+          'X-Stream-Guard-Version': '1.0',
+          'X-Stream-Guard-Permission': 'granted',
           'Referer': 'about:blank',
           'Origin': null,
           'SEC-FETCH-SITE': 'same-origin',
@@ -334,50 +325,44 @@ document.addEventListener('DOMContentLoaded', function() {
       return originalFetch.apply(this, args);
     };
   }
-
   async function loadVideo(src) {
     if (Hls.isSupported()) {
       setupStreamGuard();
-      
       const connectionSpeed = await measureConnectionSpeed();
-      
       const hlsConfig = {
         enableWorker: true,
         lowLatencyMode: true,
         backBufferLength: 30,
-        xhrSetup: function(xhr, url) {
+        xhrSetup: function (xhr, url) {
           xhr.withCredentials = false;
           xhr.setRequestHeader('X-Stream-Guard', 'enabled');
+          xhr.setRequestHeader('X-Stream-Guard-Version', '1.0');
+          xhr.setRequestHeader('X-Stream-Guard-Permission', 'granted');
           xhr.setRequestHeader('Cache-Control', 'no-store');
         }
       };
-
-      if (connectionSpeed > 5000000) { 
+      if (connectionSpeed > 5000000) {
         hlsConfig.maxBufferSize = 30 * 1000 * 1000;
         hlsConfig.maxBufferLength = 30;
         hlsConfig.maxMaxBufferLength = 60;
-      } else if (connectionSpeed > 2000000) { 
+      } else if (connectionSpeed > 2000000) {
         hlsConfig.maxBufferSize = 15 * 1000 * 1000;
         hlsConfig.maxBufferLength = 20;
         hlsConfig.maxMaxBufferLength = 40;
-      } else { 
+      } else {
         hlsConfig.maxBufferSize = 8 * 1000 * 1000;
         hlsConfig.maxBufferLength = 10;
         hlsConfig.maxMaxBufferLength = 20;
       }
-
       const hls = new Hls(hlsConfig);
-
       hls.loadSource(src);
       hls.attachMedia(video);
-      
-      hls.on(Hls.Events.MANIFEST_PARSED, function() {
+      hls.on(Hls.Events.MANIFEST_PARSED, function () {
         video.play();
       });
-
-      hls.on(Hls.Events.ERROR, function(event, data) {
+      hls.on(Hls.Events.ERROR, function (event, data) {
         if (data.fatal) {
-          switch(data.type) {
+          switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
               hls.startLoad();
               break;
@@ -390,38 +375,31 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         }
       });
-
       setInterval(cleanupResources, 30000);
-      
-      video.addEventListener('pause', function() {
+      video.addEventListener('pause', function () {
         cleanupResources();
       });
     }
-    
-    video.addEventListener('loadstart', function() {
+    video.addEventListener('loadstart', function () {
       video.crossOrigin = "anonymous";
     });
-
-    video.addEventListener('contextmenu', function(e) {
+    video.addEventListener('contextmenu', function (e) {
       e.preventDefault();
     });
-
-    video.addEventListener('canplay', function() {
-      video.play().catch(function(error) {
+    video.addEventListener('canplay', function () {
+      video.play().catch(function (error) {
         console.log("Reproducción automática bloqueada:", error);
       });
     });
   }
-
   playlistItems.forEach(item => {
-    item.addEventListener('click', function() {
+    item.addEventListener('click', function () {
       const src = this.getAttribute('data-src');
       loadVideo(src);
     });
   });
-
   loadVideo(playlistItems[0].getAttribute('data-src'));
   checkAllStreams();
-});
-</script>
+});</script>
 
+</body></html>
