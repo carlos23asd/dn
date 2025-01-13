@@ -313,7 +313,7 @@ let videoUrls = [{
   errorDetails: ''
 }, {
   name: 'ESPN',
-  url: 'https://cos1.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=fe3dfc885ab502e79b316bc619801025e0290332-20-1736777141-1736741141',
+  url: 'https://pasodpasd.livestreamdz.xyz/espn/tracks-v1a1/mono.m3u8?md5=depA7Ievar_jRpxGXYLLvQ&expires=1736803453',
   type: 'hls',
   isWorking: true,
   lastChecked: null,
@@ -369,7 +369,7 @@ let videoUrls = [{
   errorDetails: ''
 }, {
   name: 'La Liga',
-  url: 'https://doc.pricesaskeloadsc.com/movistarlaliga/tracks-v1a1/mono.m3u8?token=e81283aae073288ce4a638337f18cb4ae21c94f5-0f-1736824146-1736788146',
+  url: 'https://ddv1new.iosplayer.ru/ddv1/premium84/mono.m3u8?token=none',
   type: 'hls',
   isWorking: true,
   lastChecked: null,
@@ -397,16 +397,44 @@ const STREAM_OPTIMIZATION_CONFIG = {
   lowLatencyMode: true,
   dynamicBufferAdjustment: true,
   networkAdaptation: {
-    slowNetworkThreshold: 500, // ms ping time
-    fastNetworkThreshold: 100, // ms ping time
+    slowNetworkThreshold: 500,
+    fastNetworkThreshold: 100,
     bufferSizeMultipliers: {
-      slow: 0.5,   // Reduce buffer for slow networks
-      normal: 1,   // Standard buffer
-      fast: 2      // Increase buffer for fast networks
+      slow: 0.5,
+      normal: 1,
+      fast: 2
     }
   }
 };
 let isLoggedIn = false;
+function createAnonymousHeaders() {
+  return {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+    'Accept': '*/*',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Connection': 'keep-alive',
+    'DNT': '1',
+    'Referer': '',
+    'Sec-Ch-Ua': '"Not.A/Brand";v="8", "Chromium";v="125"',
+    'Sec-Ch-Ua-Mobile': '?0',
+    'Sec-Ch-Ua-Platform': '"Windows"',
+    'Sec-Fetch-Dest': 'video',
+    'Sec-Fetch-Mode': 'no-cors',
+    'Sec-Fetch-Site': 'cross-site',
+    'Sec-GPC': '1'
+  };
+}
+function rotateHeaders() {
+  const video = document.getElementById('video');
+  const currentUrl = video.src;
+  if (currentUrl) {
+    const currentType = videoUrls.find(item => item.url === currentUrl)?.type;
+    if (currentType) {
+      playUrl(currentUrl, currentType);
+    }
+  }
+}
+setInterval(rotateHeaders, 300000);
 async function urlVerificationBot() {
   for (let i = 0; i < videoUrls.length; i++) {
     const url = videoUrls[i].url;
@@ -476,10 +504,12 @@ function updateStreamStatus() {
 async function detectNetworkSpeed() {
   try {
     const start = performance.now();
-    await fetch('https://www.example.com', { method: 'HEAD', mode: 'no-cors' });
+    await fetch('https://www.example.com', {
+      method: 'HEAD',
+      mode: 'no-cors'
+    });
     const end = performance.now();
     const pingTime = end - start;
-    
     if (pingTime > STREAM_OPTIMIZATION_CONFIG.networkAdaptation.slowNetworkThreshold) {
       return 'slow';
     } else if (pingTime < STREAM_OPTIMIZATION_CONFIG.networkAdaptation.fastNetworkThreshold) {
@@ -523,8 +553,14 @@ function playUrl(url, type) {
   if (type === 'hls' && Hls.isSupported()) {
     detectNetworkSpeed().then(networkSpeed => {
       const bufferMultiplier = STREAM_OPTIMIZATION_CONFIG.networkAdaptation.bufferSizeMultipliers[networkSpeed];
-      
       currentHls = new Hls({
+        xhrSetup: function (xhr) {
+          xhr.setRequestHeader = function () {};
+          const headers = createAnonymousHeaders();
+          for (const [key, value] of Object.entries(headers)) {
+            xhr.setRequestHeader(key, value);
+          }
+        },
         maxBufferLength: 30 * bufferMultiplier,
         maxBufferSize: 30 * 1000 * 1000 * bufferMultiplier,
         fragLoadingMaxRetry: bufferMultiplier === 0.5 ? 1 : 2,
@@ -581,7 +617,17 @@ function playUrl(url, type) {
   } else if (type === 'flv' && flvjs.isSupported()) {
     currentFlv = flvjs.createPlayer({
       type: 'flv',
-      url: url
+      url: url,
+      hasVideo: true,
+      hasAudio: true,
+      cors: true,
+      xhrSetup: function (xhr) {
+        xhr.setRequestHeader = function () {};
+        const headers = createAnonymousHeaders();
+        for (const [key, value] of Object.entries(headers)) {
+          xhr.setRequestHeader(key, value);
+        }
+      }
     });
     currentFlv.attachMediaElement(video);
     currentFlv.load();
@@ -713,6 +759,18 @@ function initializeVideoPage() {
   document.querySelector('.main-content').style.display = 'block';
   urlVerificationBot();
   setInterval(urlVerificationBot, 900000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) {
+      const video = document.getElementById('video');
+      const currentUrl = video.src;
+      if (currentUrl) {
+        const currentType = videoUrls.find(item => item.url === currentUrl)?.type;
+        if (currentType) {
+          playUrl(currentUrl, currentType);
+        }
+      }
+    }
+  });
 }
 function checkReferrer() {
   return isLoggedIn;
