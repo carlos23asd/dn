@@ -251,12 +251,13 @@
       font-size: 0.7em;
     }
   </style>
+  <meta name="referrer" content="no-referrer">
 </head>
 <body>
   <div id="loginContainer" class="login-container">
     <div class="login-box">
       <h2>Iniciar Sesi&#xf3;n</h2>
-      <input type="password" id="passwordInput" placeholder="Contrase&#xf1;a">
+      <input type="password" id="passwordInput" placeholder="Contrase&#xf1;a" autocomplete="off">
       <button onclick="checkPassword()">Ingresar</button>
     </div>
   </div>
@@ -407,34 +408,6 @@ const STREAM_OPTIMIZATION_CONFIG = {
   }
 };
 let isLoggedIn = false;
-function createAnonymousHeaders() {
-  return {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-    'Accept': '*/*',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Connection': 'keep-alive',
-    'DNT': '1',
-    'Referer': '',
-    'Sec-Ch-Ua': '"Not.A/Brand";v="8", "Chromium";v="125"',
-    'Sec-Ch-Ua-Mobile': '?0',
-    'Sec-Ch-Ua-Platform': '"Windows"',
-    'Sec-Fetch-Dest': 'video',
-    'Sec-Fetch-Mode': 'no-cors',
-    'Sec-Fetch-Site': 'cross-site',
-    'Sec-GPC': '1'
-  };
-}
-function rotateHeaders() {
-  const video = document.getElementById('video');
-  const currentUrl = video.src;
-  if (currentUrl) {
-    const currentType = videoUrls.find(item => item.url === currentUrl)?.type;
-    if (currentType) {
-      playUrl(currentUrl, currentType);
-    }
-  }
-}
-setInterval(rotateHeaders, 300000);
 async function urlVerificationBot() {
   for (let i = 0; i < videoUrls.length; i++) {
     const url = videoUrls[i].url;
@@ -554,13 +527,6 @@ function playUrl(url, type) {
     detectNetworkSpeed().then(networkSpeed => {
       const bufferMultiplier = STREAM_OPTIMIZATION_CONFIG.networkAdaptation.bufferSizeMultipliers[networkSpeed];
       currentHls = new Hls({
-        xhrSetup: function (xhr) {
-          xhr.setRequestHeader = function () {};
-          const headers = createAnonymousHeaders();
-          for (const [key, value] of Object.entries(headers)) {
-            xhr.setRequestHeader(key, value);
-          }
-        },
         maxBufferLength: 30 * bufferMultiplier,
         maxBufferSize: 30 * 1000 * 1000 * bufferMultiplier,
         fragLoadingMaxRetry: bufferMultiplier === 0.5 ? 1 : 2,
@@ -568,6 +534,16 @@ function playUrl(url, type) {
         liveMaxLatencyDuration: 45 * bufferMultiplier,
         enableWorker: true,
         backBufferLength: 10 * bufferMultiplier
+      });
+      video.addEventListener('pause', () => {
+        if (currentHls) {
+          currentHls.config.maxBufferLength = 60 * bufferMultiplier;
+        }
+      });
+      video.addEventListener('play', () => {
+        if (currentHls) {
+          currentHls.config.maxBufferLength = 30 * bufferMultiplier;
+        }
       });
       currentHls.config.enableMetadata = false;
       currentHls.loadSource(url);
@@ -617,17 +593,7 @@ function playUrl(url, type) {
   } else if (type === 'flv' && flvjs.isSupported()) {
     currentFlv = flvjs.createPlayer({
       type: 'flv',
-      url: url,
-      hasVideo: true,
-      hasAudio: true,
-      cors: true,
-      xhrSetup: function (xhr) {
-        xhr.setRequestHeader = function () {};
-        const headers = createAnonymousHeaders();
-        for (const [key, value] of Object.entries(headers)) {
-          xhr.setRequestHeader(key, value);
-        }
-      }
+      url: url
     });
     currentFlv.attachMediaElement(video);
     currentFlv.load();
@@ -759,18 +725,6 @@ function initializeVideoPage() {
   document.querySelector('.main-content').style.display = 'block';
   urlVerificationBot();
   setInterval(urlVerificationBot, 900000);
-  document.addEventListener('visibilitychange', function () {
-    if (!document.hidden) {
-      const video = document.getElementById('video');
-      const currentUrl = video.src;
-      if (currentUrl) {
-        const currentType = videoUrls.find(item => item.url === currentUrl)?.type;
-        if (currentType) {
-          playUrl(currentUrl, currentType);
-        }
-      }
-    }
-  });
 }
 function checkReferrer() {
   return isLoggedIn;
@@ -891,13 +845,11 @@ function highlightCurrentItem(playlistItems, videoPlayer, controls) {
   }
 }
 function checkPassword() {
-  const currentTime = Date.now();
-  if (lastFailedLoginTime && (currentTime - lastFailedLoginTime) / 1000 < LOGIN_COOLDOWN_SECONDS) {
-    const remainingCooldown = Math.ceil(LOGIN_COOLDOWN_SECONDS - (currentTime - lastFailedLoginTime) / 1000);
-    alert(`Por favor espere ${remainingCooldown} segundos antes de intentar nuevamente.`);
-    return;
-  }
-  const password = document.getElementById('passwordInput').value;
+  const passwordInput = document.getElementById('passwordInput');
+  
+  const password = passwordInput.value;
+  passwordInput.value = ''; // Immediately clear the input
+  
   if (password === '1344') {
     isLoggedIn = true;
     loginAttempts = 0;
@@ -912,20 +864,34 @@ function checkPassword() {
     initializeVideoPage();
   } else {
     loginAttempts++;
-    lastFailedLoginTime = currentTime;
+    lastFailedLoginTime = Date.now();
     alert('Contraseña incorrecta');
-    document.getElementById('passwordInput').value = '';
   }
 }
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+    e.preventDefault();
+    return false;
+  }
+});
+document.addEventListener('contextmenu', function(e) {
+  e.preventDefault();
+  return false;
+});
+document.getElementById('passwordInput').addEventListener('copy', function(e) {
+  e.preventDefault();
+  return false;
+});
+document.getElementById('passwordInput').addEventListener('cut', function(e) {
+  e.preventDefault();
+  return false;
+});
 document.getElementById('passwordInput').addEventListener('keypress', function (e) {
   if (e.key === 'Enter') {
     checkPassword();
   }
 });
 document.addEventListener('keydown', handleTVNavigation);
-document.addEventListener('contextmenu', function (e) {
-  e.preventDefault();
-  return false;
-});</script>
+</script>
 </body>
 </html>
