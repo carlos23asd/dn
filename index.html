@@ -1,408 +1,866 @@
-<html><head><base href="data:text/html">
-<meta charset="UTF-8">
-<title>Reproductor HLS Protegido con Bot Verificador</title>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<style>
-  body {
-    margin: 0;
-    padding: 20px;
-    background: #000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-    font-family: Arial, sans-serif;
-    color: white;
-  }
+<html><head><base href="https://example.com">
+  <title>Reproductor de Video con HLS</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flv.js@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/puppeteer-core@1.24.0/dist/puppeteer-core.cjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@0.27.2/dist/axios.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #1a1a1a;
+      color: white;
+      font-family: Arial, sans-serif;
+      -webkit-user-select: none;
+      -moz-user-select: none; 
+      -ms-user-select: none;
+      user-select: none;
+    }
+    
+    .video-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      display: block;
+    }
+    
+    video {
+      width: 100%;
+      height: auto;
+    }
+    
+    .controls {
+      padding: 15px;
+      background: #333;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    button {
+      background: #4CAF50;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    button:hover {
+      background: #45a049;
+    }
+    
+    select {
+      padding: 6px;
+      border-radius: 4px;
+      background: #444;
+      color: white;
+      border: 1px solid #666;
+    }
 
-  .access-denied {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    flex-direction: column;
-    gap: 20px;
-  }
+    .playlist-container {
+      display: block;
+      margin-top: 20px;
+      background: #333;
+      padding: 15px;
+      border-radius: 8px;
+    }
 
-  .main-container {
-    display: flex;
-    gap: 20px;
-    width: 100%;
-    max-width: 1200px;
-  }
+    .playlist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #444;
+      border-radius: 4px;
+    }
 
-  .player-container {
-    flex: 1;
-    background: #111;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    margin-bottom: 20px;
-  }
+    .playlist-item button {
+      padding: 4px 8px;
+    }
 
-  #video-player {
-    width: 100%;
-    height: auto;
-    max-height: 450px;
-  }
+    .stream-status {
+      margin-top: 20px;
+      background: #333;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #444;
+      border-radius: 4px;
+    }
+    
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    
+    .status-good {
+      background: #4CAF50;
+    }
+    
+    .status-slow {
+      background: #FFA726;
+    }
+    
+    .status-error {
+      background: #f44336;
+    }
+    
+    .status-details {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .status-name {
+      font-weight: bold;
+    }
+    
+    .status-message {
+      font-size: 0.9em;
+      color: #aaa;
+    }
+    
+    .viewer-count {
+      text-align: center;
+      background: #333;
+      padding: 10px;
+      margin-top: 20px;
+      border-radius: 8px;
+      color: white;
+    }
+    
+    .tv-focus {
+      outline: 3px solid yellow;
+      background-color: rgba(255, 255, 0, 0.2);
+    }
 
-  .controls {
-    padding: 15px;
-    background: #1a1a1a;
-    color: white;
-    text-align: center;
-  }
+    .tv-navigation {
+      text-align: center;
+      background: #333;
+      color: white;
+      padding: 10px;
+      margin-top: 20px;
+      border-radius: 8px;
+    }
+    .playlist-name {
+      cursor: pointer;
+    }
+    
+    /* Add login styles */
+    .login-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
 
-  .status {
-    color: #00ff00;
-    font-size: 14px;
-    margin: 10px 0;
-  }
+    .login-box {
+      background: #333;
+      padding: 30px;
+      border-radius: 8px;
+      text-align: center;
+    }
 
-  .playlist {
-    width: 300px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+    .login-box input {
+      padding: 8px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border: 1px solid #666;
+      background: #444;
+      color: white;
+    }
 
-  .playlist-item {
-    padding: 10px;
-    background: #222;
-    color: white;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.3s;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
+    .login-box button {
+      margin-top: 10px;
+      width: 100%;
+    }
 
-  .playlist-item:hover {
-    background: #333;
-  }
-
-  .status-indicator {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    margin-left: 10px;
-  }
-
-  .status-online {
-    background: #00ff00;
-  }
-
-  .status-offline {
-    background: #ff0000;
-  }
-
-  .bot-container {
-    width: 100%;
-    max-width: 1200px;
-    background: #111;
-    border-radius: 8px;
-    padding: 15px;
-    margin: 20px 0;
-  }
-
-  .bot-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-  }
-
-  .check-button {
-    background: #2196F3;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.3s;
-  }
-
-  .check-button:hover {
-    background: #1976D2;
-  }
-
-  .bot-log {
-    background: #1a1a1a;
-    padding: 10px;
-    border-radius: 4px;
-    font-family: monospace;
-    height: 150px;
-    overflow-y: auto;
-    margin-top: 10px;
-  }
-
-  .log-entry {
-    margin: 5px 0;
-    padding: 5px;
-    border-left: 3px solid;
-  }
-
-  .log-success {
-    border-color: #00ff00;
-  }
-
-  .log-error {
-    border-color: #ff0000;
-  }
-</style>
+    .hidden {
+      display: none !important;
+    }
+    
+    .main-content {
+      display: none;
+    }
+    
+    .main-content.visible {
+      display: block;
+    }
+    
+    .stream-verification-results {
+      margin-top: 20px;
+      background: #333;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    
+    .stream-detail {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #444;
+      border-radius: 4px;
+    }
+    
+    .stream-status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .video-section {
+      display: flex;
+      gap: 20px;
+    }
+    
+    #playlistContainer {
+      width: 200px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    
+    .playlist-item {
+      padding: 5px;
+      margin-bottom: 5px;
+      font-size: 0.8em;
+    }
+    
+    .playlist-item button {
+      padding: 3px 6px;
+      font-size: 0.7em;
+    }
+  </style>
 </head>
 <body>
-
-<div id="accessDenied" class="access-denied" style="display: none;">
-  <h1>Acceso Denegado</h1>
-  <p>No tienes permiso para acceder a este contenido.</p>
-</div>
-
-<div class="main-container">
-  <div class="player-container">
-    <video id="video-player" controls></video>
-    <div class="controls">
-      <div class="status">StreamGuard Activado</div>
+  <div id="loginContainer" class="login-container">
+    <div class="login-box">
+      <h2>Iniciar Sesi&#xf3;n</h2>
+      <input type="password" id="passwordInput" placeholder="Contrase&#xf1;a">
+      <button onclick="checkPassword()">Ingresar</button>
     </div>
   </div>
-
-  <div class="playlist" id="playlist">
-    <div class="playlist-item" data-src="https://z29vzc.fubohd.com/dsports/index.m3u8?token=732131dc341b2399c873f9f0d59ef5702ec3e955-e0-1736762882-1736726882">
-      Win+ <span class="status-indicator"></span>
+  <div class="main-content">
+    <div class="video-section">
+      <div id="playlistContainer" class="playlist-container">
+        <h3>Lista de Reproductores</h3>
+        <div id="playlistItems"></div>
+      </div>
+      <div class="video-container" id="videoContainer">
+        <video id="video" controls></video>
+        <div class="controls">
+          <button id="playPause">Play/Pause</button>
+          <select id="quality">
+            <option value>Calidad Auto</option>
+          </select>
+          <button id="fullscreen">Pantalla Completa</button>
+        </div>
+      </div>
+      <div id="botResults" class="stream-verification-results"></div>
     </div>
-    <div class="playlist-item" data-src="https://doc.pricesaskeloadsc.com/dsports/tracks-v1a1/mono.m3u8?token=6c5d20295d85a59ec0d68df3b75d527c3353af4b-f2-1736762168-1736726168">
-      Dsports <span class="status-indicator"></span>
+    <div class="viewer-count">
+      Viewer Count: <span id="viewerCount">0</span>
     </div>
-    <div class="playlist-item" data-src="https://example.com/espn.m3u8">
-      ESPN <span class="status-indicator"></span>
-    </div>
-    <div class="playlist-item" data-src="https://example.com/espn2.m3u8">
-      ESPN 2 <span class="status-indicator"></span>
-    </div>
-    <div class="playlist-item" data-src="https://example.com/espn3.m3u8">
-      ESPN 3 <span class="status-indicator"></span>
-    </div>
-    <div class="playlist-item" data-src="https://example.com/espn4.m3u8">
-      ESPN 4 <span class="status-indicator"></span>
-    </div>
-    <div class="playlist-item" data-src="https://example.com/espnextra.m3u8">
-      ESPN EXTRA <span class="status-indicator"></span>
-    </div>
-    <div class="playlist-item" data-src="https://example.com/espnpremium.m3u8">
-      ESPN Premium <span class="status-indicator"></span>
+    <div id="tv-navigation" class="tv-navigation">
+      <div class="navigation-instructions">
+        &#x25b2; Subir | &#x25bc; Bajar | OK Seleccionar
+      </div>
     </div>
   </div>
-</div>
-
-<div class="bot-container">
-  <div class="bot-header">
-    <h3>Bot Verificador de Streams</h3>
-    <button class="check-button" onclick="checkAllStreams()">Verificar Todos los Canales</button>
-  </div>
-  <div class="bot-log" id="botLog"></div>
-</div>
-
-<script>document.addEventListener('DOMContentLoaded', function () {
-  function checkReferrer() {
-    const allowedOrigin = "https://carlos23asd.github.io/dn1/";
-    const referrer = document.referrer;
-    if (referrer !== "" && !referrer.startsWith(allowedOrigin)) {
-      document.getElementById('accessDenied').style.display = 'flex';
-      document.querySelector('.main-container').style.display = 'none';
-      document.querySelector('.bot-container').style.display = 'none';
-      return false;
+  <script>let loginAttempts = 0;
+let lastFailedLoginTime = null;
+const LOGIN_COOLDOWN_SECONDS = 30;
+let videoUrls = [{
+  name: 'Canal Caracol',
+  url: 'https://stream.gia.tv/giatv/giatv-Gary2CanalGary2Canal/Gary2CanalGary2Canal/chunks.m3u8',
+  type: 'hls',
+  isWorking: true,
+  lastChecked: null,
+  errorDetails: ''
+}, {
+  name: 'Simpson 24/7',
+  url: 'https://stream-cdn-iad2.vaughnsoft.net/play/live_simpson_maniahd193.flv',
+  type: 'flv',
+  isWorking: true,
+  lastChecked: null,
+  errorDetails: ''
+}, {
+  name: 'Win+',
+  url: 'https://14c5.pricesaskeloadsc.com/winplusonline1/tracks-v1a1/mono.m3u8?token=225a018d037f25863cdf896a06973b354d0bf35d-b2-1736775912-1736739912',
+  type: 'hls',
+  isWorking: true,
+  lastChecked: null,
+  errorDetails: ''
+}, {
+  name: 'ESPN',
+  url: 'https://cos1.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=fe3dfc885ab502e79b316bc619801025e0290332-20-1736777141-1736741141',
+  type: 'hls',
+  isWorking: true,
+  lastChecked: null,
+  errorDetails: ''
+}, {
+  name: 'ESPN 2',
+  url: 'https://pecdl.pricesaskeloadsc.com/espn2/tracks-v1a1/mono.m3u8?token=415e275713aaa81604922f407c3ea8c7757e5481-eb-1736777101-1736741101',
+  type: 'hls',
+  isWorking: true,
+  lastChecked: null,
+  errorDetails: ''
+}, {
+  name: 'ESPN 3',
+  url: 'https://cale.pricesaskeloadsc.com/espn3/tracks-v1a1/mono.m3u8?token=168098952ab44a144d4723900d4a385a9ce82418-c9-1736777192-1736741192',
+  type: 'hls',
+  isWorking: true,
+  lastChecked: null,
+  errorDetails: ''
+}, {
+  name: 'ESPN 4',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792',
+  type: 'hls',
+  isWorking: true,
+  lastChecked: null,
+  errorDetails: ''
+}, {
+  name: 'ESPN EXTRA',
+  url: 'https://5156.pricesaskeloadsc.com/espn5/tracks-v1a1/mono.m3u8?token=32b630820cbca8d63e0c343febad588878d1fef2-e4-1736777214-1736741214',
+  type: 'hls',
+  isWorking: true,
+  lastChecked: null,
+  errorDetails: ''
+}, {
+  name: 'ESPN Premium',
+  url: 'https://vals88.pricesaskeloadsc.com/espn_premium/tracks-v1a1/mono.m3u8?token=99eeaf820239dd431679e36e68c887c8fac4bcec-f3-1736777230-1736741230',
+  type: 'hls',
+  isWorking: true,
+  lastChecked: null,
+  errorDetails: ''
+}, {
+  name: 'Directv',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792',
+  type: 'hls',
+  isWorking: true,
+  lastChecked: null,
+  errorDetails: ''
+}, {
+  name: 'Solo eventos',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792',
+  type: 'hls',
+  isWorking: true,
+  lastChecked: null,
+  errorDetails: ''
+}];
+let currentHls = null;
+let currentFlv = null;
+let streamStatuses = {};
+let viewerCount = 0;
+const TV_KEYS = {
+  UP: 38,
+  DOWN: 40,
+  OK: 13
+};
+const VIDEO_CONTROLS = {
+  PLAY_PAUSE: 0,
+  QUALITY: 1,
+  FULLSCREEN: 2
+};
+let currentTVFocus = {
+  section: 'playlist',
+  index: 0
+};
+const STREAM_OPTIMIZATION_CONFIG = {
+  lowLatencyMode: true,
+  dynamicBufferAdjustment: true,
+  networkAdaptation: {
+    slowNetworkThreshold: 500, // ms ping time
+    fastNetworkThreshold: 100, // ms ping time
+    bufferSizeMultipliers: {
+      slow: 0.5,   // Reduce buffer for slow networks
+      normal: 1,   // Standard buffer
+      fast: 2      // Increase buffer for fast networks
     }
-    return true;
   }
-  if (!checkReferrer()) {
-    return;
-  }
-  const video = document.getElementById('video-player');
-  const playlistItems = document.querySelectorAll('.playlist-item');
-  const botLog = document.getElementById('botLog');
-  document.addEventListener('contextmenu', function (e) {
-    e.preventDefault();
-  });
-  document.addEventListener('mousedown', function (e) {
-    if (e.button === 0) {
-      e.preventDefault();
-    }
-  });
-  function logMessage(message, isSuccess) {
-    const entry = document.createElement('div');
-    entry.className = `log-entry ${isSuccess ? 'log-success' : 'log-error'}`;
-    entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-    botLog.appendChild(entry);
-    botLog.scrollTop = botLog.scrollHeight;
-  }
-  async function checkStream(url) {
+};
+let isLoggedIn = false;
+async function urlVerificationBot() {
+  for (let i = 0; i < videoUrls.length; i++) {
+    const url = videoUrls[i].url;
     try {
-      const response = await fetch(url, {
-        method: 'HEAD',
-        headers: {
-          'User-Agent': 'StreamGuard/1.0',
-          'X-Stream-Guard': 'enabled',
-          'X-Stream-Guard-Version': '1.0',
-          'X-Stream-Guard-Permission': 'granted',
-          'Allow-Access-Content': 'true',
-          'Content-Access': 'allowed',
-          'Referer': 'about:blank',
-          'Origin': null
-        },
-        mode: 'cors',
-        credentials: 'omit'
+      const response = await axios.head(url, {
+        timeout: 5000
       });
-      return response.ok;
-    } catch (error) {
-      return false;
-    }
-  }
-  async function measureConnectionSpeed() {
-    const startTime = performance.now();
-    const testFile = 'https://www.google.com/images/phd/px.gif';
-    try {
-      const response = await fetch(testFile);
-      const endTime = performance.now();
-      const duration = endTime - startTime;
-      const speed = response.headers.get('content-length') * 8 / (duration / 1000);
-      return speed;
-    } catch (error) {
-      console.error('Error measuring speed:', error);
-      return 1000000;
-    }
-  }
-  window.checkAllStreams = async function () {
-    logMessage('Iniciando verificación de streams...', true);
-    for (const item of playlistItems) {
-      const url = item.getAttribute('data-src');
-      const channelName = item.textContent.trim().split(' ')[0];
-      const statusIndicator = item.querySelector('.status-indicator');
-      logMessage(`Verificando canal: ${channelName}...`, true);
-      try {
-        const isWorking = await checkStream(url);
-        statusIndicator.className = `status-indicator ${isWorking ? 'status-online' : 'status-offline'}`;
-        logMessage(`Canal ${channelName}: ${isWorking ? 'FUNCIONANDO' : 'NO FUNCIONA'}`, isWorking);
-      } catch (error) {
-        statusIndicator.className = 'status-indicator status-offline';
-        logMessage(`Error al verificar ${channelName}: ${error.message}`, false);
-      }
-    }
-    logMessage('Verificación completada', true);
-  };
-  const securityConfig = {
-    enableStreamGuard: true,
-    streamGuardVersion: '1.0',
-    streamGuardPermission: 'granted',
-    maskUserAgent: true,
-    hideReferrer: true,
-    allowContentAccess: true
-  };
-  function cleanupResources() {
-    if (window.gc) {
-      window.gc();
-    }
-    performance.clearResourceTimings();
-  }
-  function setupStreamGuard() {
-    const originalFetch = window.fetch;
-    window.fetch = function (...args) {
-      if (args[1] && args[1].headers) {
-        args[1].headers = new Headers({
-          'User-Agent': 'StreamGuard/1.0',
-          'X-Stream-Guard': 'enabled',
-          'X-Stream-Guard-Version': '1.0',
-          'X-Stream-Guard-Permission': 'granted',
-          'Allow-Access-Content': 'true',
-          'Content-Access': 'allowed',
-          'SEC-FETCH-SITE': 'same-origin',
-          'SEC-FETCH-MODE': 'cors'
-        });
-      }
-      return originalFetch.apply(this, args);
-    };
-  }
-  async function loadVideo(src) {
-    if (Hls.isSupported()) {
-      setupStreamGuard();
-      const connectionSpeed = await measureConnectionSpeed();
-      const hlsConfig = {
-        enableWorker: true,
-        lowLatencyMode: true,
-        backBufferLength: 30,
-        xhrSetup: function (xhr, url) {
-          xhr.withCredentials = false;
-          xhr.setRequestHeader('X-Stream-Guard', 'enabled');
-          xhr.setRequestHeader('X-Stream-Guard-Version', '1.0');
-          xhr.setRequestHeader('X-Stream-Guard-Permission', 'granted');
-          xhr.setRequestHeader('Cache-Control', 'no-store');
-        }
-      };
-      if (connectionSpeed > 5000000) {
-        hlsConfig.maxBufferSize = 30 * 1000 * 1000;
-        hlsConfig.maxBufferLength = 30;
-        hlsConfig.maxMaxBufferLength = 60;
-      } else if (connectionSpeed > 2000000) {
-        hlsConfig.maxBufferSize = 15 * 1000 * 1000;
-        hlsConfig.maxBufferLength = 20;
-        hlsConfig.maxMaxBufferLength = 40;
+      if (response.status === 200) {
+        videoUrls[i].isWorking = true;
+        videoUrls[i].lastChecked = new Date().getTime();
+        videoUrls[i].errorDetails = '';
       } else {
-        hlsConfig.maxBufferSize = 8 * 1000 * 1000;
-        hlsConfig.maxBufferLength = 10;
-        hlsConfig.maxMaxBufferLength = 20;
+        videoUrls[i].isWorking = false;
+        videoUrls[i].lastChecked = new Date().getTime();
+        videoUrls[i].errorDetails = `Error ${response.status}: ${response.statusText}`;
       }
-      const hls = new Hls(hlsConfig);
-      hls.loadSource(src);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, function () {
+    } catch (error) {
+      videoUrls[i].isWorking = false;
+      videoUrls[i].lastChecked = new Date().getTime();
+      videoUrls[i].errorDetails = error.message;
+    }
+  }
+  updateStreamStatus();
+}
+function checkStreamAvailability(url) {
+  return videoUrls.find(item => item.url === url).isWorking;
+}
+function getStreamMetadata(url) {
+  return videoUrls.find(item => item.url === url);
+}
+function logStreamDetails(streamInfo) {
+  console.log(`Stream: ${streamInfo.name}, URL: ${streamInfo.url}, Status: ${streamInfo.isWorking}, Last Checked: ${streamInfo.lastChecked}, Error Details: ${streamInfo.errorDetails}`);
+}
+function updateStreamStatus() {
+  const container = document.getElementById('playlistContainer');
+  let statusContainer = document.querySelector('.stream-status');
+  if (!statusContainer) {
+    statusContainer = document.createElement('div');
+    statusContainer.className = 'stream-status';
+    statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
+    container.appendChild(statusContainer);
+  }
+  const statusContent = document.createElement('div');
+  videoUrls.forEach(item => {
+    const status = item.isWorking ? 'good' : 'error';
+    const statusItem = document.createElement('div');
+    statusItem.className = 'status-item';
+    const indicator = document.createElement('div');
+    indicator.className = `status-indicator status-${status}`;
+    const details = document.createElement('div');
+    details.className = 'status-details';
+    const name = document.createElement('div');
+    name.className = 'status-name';
+    name.textContent = item.name;
+    const message = document.createElement('div');
+    message.className = 'status-message';
+    message.textContent = item.errorDetails || 'Reproducion estable';
+    details.appendChild(name);
+    details.appendChild(message);
+    statusItem.appendChild(indicator);
+    statusItem.appendChild(details);
+    statusContent.appendChild(statusItem);
+  });
+  statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
+  statusContainer.appendChild(statusContent);
+}
+async function detectNetworkSpeed() {
+  try {
+    const start = performance.now();
+    await fetch('https://www.example.com', { method: 'HEAD', mode: 'no-cors' });
+    const end = performance.now();
+    const pingTime = end - start;
+    
+    if (pingTime > STREAM_OPTIMIZATION_CONFIG.networkAdaptation.slowNetworkThreshold) {
+      return 'slow';
+    } else if (pingTime < STREAM_OPTIMIZATION_CONFIG.networkAdaptation.fastNetworkThreshold) {
+      return 'fast';
+    }
+    return 'normal';
+  } catch (error) {
+    return 'normal';
+  }
+}
+function trackNetworkPerformance(url, loadTime) {
+  const streamIndex = videoUrls.findIndex(item => item.url === url);
+  if (streamIndex !== -1) {
+    if (loadTime > 2000) {
+      streamStatuses[url] = {
+        status: 'slow',
+        message: 'Red lenta - Ajustando buffer'
+      };
+    } else {
+      streamStatuses[url] = {
+        status: 'good',
+        message: 'Reproduccion optimizada'
+      };
+    }
+    updateStreamStatus();
+  }
+}
+function playUrl(url, type) {
+  if (currentHls) {
+    currentHls.destroy();
+    currentHls = null;
+  }
+  if (currentFlv) {
+    currentFlv.destroy();
+    currentFlv = null;
+  }
+  const video = document.getElementById('video');
+  const qualitySelect = document.getElementById('quality');
+  qualitySelect.innerHTML = '<option value="">Calidad Auto</option>';
+  video.src = '';
+  if (type === 'hls' && Hls.isSupported()) {
+    detectNetworkSpeed().then(networkSpeed => {
+      const bufferMultiplier = STREAM_OPTIMIZATION_CONFIG.networkAdaptation.bufferSizeMultipliers[networkSpeed];
+      
+      currentHls = new Hls({
+        maxBufferLength: 30 * bufferMultiplier,
+        maxBufferSize: 30 * 1000 * 1000 * bufferMultiplier,
+        fragLoadingMaxRetry: bufferMultiplier === 0.5 ? 1 : 2,
+        liveSyncDuration: 30 * bufferMultiplier,
+        liveMaxLatencyDuration: 45 * bufferMultiplier,
+        enableWorker: true,
+        backBufferLength: 10 * bufferMultiplier
+      });
+      currentHls.config.enableMetadata = false;
+      currentHls.loadSource(url);
+      currentHls.attachMedia(video);
+      currentHls.on(Hls.Events.ERROR, function (event, data) {
+        const streamIndex = videoUrls.findIndex(item => item.url === url);
+        if (streamIndex !== -1) {
+          streamStatuses[url] = {
+            status: 'error',
+            message: `Error: ${data.type} - ${data.details}`
+          };
+          updateStreamStatus();
+        }
+      });
+      currentHls.on(Hls.Events.FRAG_LOADED, function (event, data) {
+        const loadTime = data.stats.loading.end - data.stats.loading.start;
+        trackNetworkPerformance(url, loadTime);
+        if (loadTime > 2000) {
+          streamStatuses[url] = {
+            status: 'slow',
+            message: 'Reproduccion lenta - Alta latencia'
+          };
+        } else {
+          streamStatuses[url] = {
+            status: 'good',
+            message: 'Reproduccion estable'
+          };
+        }
+        updateStreamStatus();
+      });
+      currentHls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+        const qualities = data.levels.map((level, index) => ({
+          index: index,
+          resolution: `${level.width}x${level.height}`,
+          bitrate: level.bitrate
+        }));
+        qualities.forEach(quality => {
+          const option = document.createElement('option');
+          option.value = quality.index;
+          option.text = `${quality.resolution} (${Math.round(quality.bitrate / 1000)} kbps)`;
+          qualitySelect.appendChild(option);
+        });
+        currentHls.currentLevel = Math.min(1, currentHls.levels.length - 1);
         video.play();
       });
-      hls.on(Hls.Events.ERROR, function (event, data) {
-        if (data.fatal) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              hls.startLoad();
-              break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              hls.recoverMediaError();
-              break;
-            default:
-              hls.destroy();
-              break;
+    });
+  } else if (type === 'flv' && flvjs.isSupported()) {
+    currentFlv = flvjs.createPlayer({
+      type: 'flv',
+      url: url
+    });
+    currentFlv.attachMediaElement(video);
+    currentFlv.load();
+    currentFlv.on(flvjs.Events.ERROR, function (errorType, errorDetail) {
+      console.error('FLV Error:', errorType, errorDetail);
+    });
+  } else {
+    video.src = url;
+  }
+  video.play();
+}
+function updatePlaylist() {
+  const container = document.getElementById('playlistItems');
+  container.innerHTML = '';
+  videoUrls.forEach((item, index) => {
+    const playlistItem = document.createElement('div');
+    playlistItem.className = 'playlist-item';
+    const playButton = document.createElement('button');
+    playButton.textContent = 'Reproducir';
+    playButton.onclick = () => {
+      playUrl(item.url, item.type);
+    };
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'playlist-name';
+    nameSpan.textContent = item.name;
+    nameSpan.onclick = () => {
+      playUrl(item.url, item.type);
+    };
+    playlistItem.appendChild(playButton);
+    playlistItem.appendChild(nameSpan);
+    container.appendChild(playlistItem);
+  });
+  updateStreamStatus();
+}
+function initializeVideo() {
+  const video = document.getElementById('video');
+  const playPauseBtn = document.getElementById('playPause');
+  const qualitySelect = document.getElementById('quality');
+  const fullscreenBtn = document.getElementById('fullscreen');
+  playUrl(videoUrls[0].url, videoUrls[0].type);
+  playPauseBtn.addEventListener('click', function () {
+    if (video.paused) {
+      video.play();
+    } else {
+      video.pause();
+    }
+  });
+  fullscreenBtn.addEventListener('click', function () {
+    if (!document.fullscreenElement) {
+      if (video.requestFullscreen) {
+        video.requestFullscreen();
+      } else if (video.webkitRequestFullscreen) {
+        video.webkitRequestFullscreen();
+      } else if (video.msRequestFullscreen) {
+        video.msRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    }
+  });
+  video.addEventListener('play', () => {
+    playPauseBtn.textContent = 'Pause';
+  });
+  video.addEventListener('pause', () => {
+    playPauseBtn.textContent = 'Play';
+  });
+  qualitySelect.addEventListener('change', function () {
+    if (currentHls) {
+      if (this.value === '') {
+        currentHls.currentLevel = -1;
+      } else {
+        const selectedLevel = Number(this.value);
+        currentHls.currentLevel = selectedLevel;
+      }
+    }
+  });
+  document.addEventListener('keydown', event => {
+    switch (event.key) {
+      case 'ArrowUp':
+        break;
+      case 'ArrowDown':
+        break;
+      case 'ArrowLeft':
+        break;
+      case 'ArrowRight':
+        break;
+      case 'Enter':
+        if (video.paused) {
+          video.play();
+        } else {
+          video.pause();
+        }
+        break;
+      case 'Escape':
+        if (document.fullscreenElement) {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
           }
         }
-      });
-      setInterval(cleanupResources, 30000);
-      video.addEventListener('pause', function () {
-        cleanupResources();
-      });
+        break;
+      default:
+        break;
     }
-    video.addEventListener('loadstart', function () {
-      video.crossOrigin = "anonymous";
-    });
-    video.addEventListener('contextmenu', function (e) {
-      e.preventDefault();
-    });
-    video.addEventListener('canplay', function () {
-      video.play().catch(function (error) {
-        console.log("Reproducción automática bloqueada:", error);
-      });
-    });
-  }
-  playlistItems.forEach(item => {
-    item.addEventListener('click', function () {
-      const src = this.getAttribute('data-src');
-      loadVideo(src);
-    });
   });
-  loadVideo(playlistItems[0].getAttribute('data-src'));
-  checkAllStreams();
+}
+function initializeVideoPage() {
+  document.body.onmousedown = function (e) {
+    if (e.button === 0) {
+      e.preventDefault();
+      return false;
+    }
+  };
+  document.getElementById('videoContainer').style.display = 'block';
+  initializeVideo();
+  updatePlaylist();
+  viewerCount++;
+  updateViewerCount();
+  document.addEventListener('keydown', handleTVNavigation);
+  document.querySelector('.main-content').style.display = 'block';
+  urlVerificationBot();
+  setInterval(urlVerificationBot, 900000);
+}
+function checkReferrer() {
+  return isLoggedIn;
+}
+function getCurrentUser() {
+  return 'default';
+}
+function updateViewerCount() {
+  let viewerCountContainer = document.getElementById('viewerCountContainer');
+  if (!viewerCountContainer) {
+    viewerCountContainer = document.createElement('div');
+    viewerCountContainer.id = 'viewerCountContainer';
+    viewerCountContainer.className = 'viewer-count';
+    document.querySelector('.main-content').appendChild(viewerCountContainer);
+  }
+  viewerCountContainer.textContent = `Personas viendo: ${viewerCount}`;
+}
+function handleTVNavigation(event) {
+  document.body.onmousedown = function (e) {
+    if (e.button === 0) {
+      e.preventDefault();
+      return false;
+    }
+  };
+  const playlistItems = document.querySelectorAll('.playlist-item');
+  const videoPlayer = document.getElementById('video');
+  const controls = document.querySelectorAll('.controls button, .controls select');
+  const navigationSections = ['playlist', 'videoPlayer', 'controls'];
+  switch (event.keyCode) {
+    case TV_KEYS.UP:
+      navigateUp(playlistItems, videoPlayer, controls);
+      break;
+    case TV_KEYS.DOWN:
+      navigateDown(playlistItems, videoPlayer, controls);
+      break;
+    case TV_KEYS.OK:
+      selectCurrentItem(playlistItems, videoPlayer, controls);
+      break;
+    case TV_KEYS.LEFT:
+      if (currentTVFocus.section === 'controls') {
+        currentTVFocus.index = Math.max(0, currentTVFocus.index - 1);
+        highlightCurrentItem(playlistItems, videoPlayer, controls);
+      }
+      break;
+    case TV_KEYS.RIGHT:
+      if (currentTVFocus.section === 'controls') {
+        currentTVFocus.index = Math.min(controls.length - 1, currentTVFocus.index + 1);
+        highlightCurrentItem(playlistItems, videoPlayer, controls);
+      }
+      break;
+  }
+}
+function navigateUp(playlistItems, videoPlayer, controls) {
+  if (currentTVFocus.section === 'playlist' && currentTVFocus.index > 0) {
+    currentTVFocus.index--;
+    highlightCurrentItem(playlistItems, videoPlayer, controls);
+  } else if (currentTVFocus.section === 'videoPlayer') {
+    currentTVFocus.section = 'playlist';
+    currentTVFocus.index = playlistItems.length - 1;
+    highlightCurrentItem(playlistItems, videoPlayer, controls);
+  } else if (currentTVFocus.section === 'controls') {
+    if (currentTVFocus.index > 0) {
+      currentTVFocus.index--;
+      highlightCurrentItem(playlistItems, videoPlayer, controls);
+    } else {
+      currentTVFocus.section = 'videoPlayer';
+      currentTVFocus.index = 0;
+      highlightCurrentItem(playlistItems, videoPlayer, controls);
+    }
+  }
+}
+function navigateDown(playlistItems, videoPlayer, controls) {
+  if (currentTVFocus.section === 'playlist' && currentTVFocus.index < playlistItems.length - 1) {
+    currentTVFocus.index++;
+    highlightCurrentItem(playlistItems, videoPlayer, controls);
+  } else if (currentTVFocus.section === 'playlist' && currentTVFocus.index === playlistItems.length - 1) {
+    currentTVFocus.section = 'videoPlayer';
+    currentTVFocus.index = 0;
+    highlightCurrentItem(playlistItems, videoPlayer, controls);
+  } else if (currentTVFocus.section === 'videoPlayer') {
+    currentTVFocus.section = 'controls';
+    currentTVFocus.index = 0;
+    highlightCurrentItem(playlistItems, videoPlayer, controls);
+  }
+  if (currentTVFocus.section === 'controls') {
+    if (currentTVFocus.index < controls.length - 1) {
+      currentTVFocus.index++;
+      highlightCurrentItem(playlistItems, videoPlayer, controls);
+    }
+  }
+}
+function selectCurrentItem(playlistItems, videoPlayer, controls) {
+  if (currentTVFocus.section === 'playlist' && playlistItems[currentTVFocus.index]) {
+    const playButton = playlistItems[currentTVFocus.index].querySelector('button');
+    if (playButton) {
+      playButton.click();
+    }
+  } else if (currentTVFocus.section === 'videoPlayer') {
+    if (videoPlayer.paused) {
+      videoPlayer.play();
+    } else {
+      videoPlayer.pause();
+    }
+  } else if (currentTVFocus.section === 'controls' && controls[currentTVFocus.index]) {
+    controls[currentTVFocus.index].click();
+  }
+}
+function highlightCurrentItem(playlistItems, videoPlayer, controls) {
+  playlistItems.forEach(item => item.classList.remove('tv-focus'));
+  videoPlayer.classList.remove('tv-focus');
+  controls.forEach(control => control.classList.remove('tv-focus'));
+  if (currentTVFocus.section === 'playlist' && playlistItems[currentTVFocus.index]) {
+    playlistItems[currentTVFocus.index].classList.add('tv-focus');
+  } else if (currentTVFocus.section === 'videoPlayer') {
+    videoPlayer.classList.add('tv-focus');
+  } else if (currentTVFocus.section === 'controls' && controls[currentTVFocus.index]) {
+    controls[currentTVFocus.index].classList.add('tv-focus');
+  }
+}
+function checkPassword() {
+  const currentTime = Date.now();
+  if (lastFailedLoginTime && (currentTime - lastFailedLoginTime) / 1000 < LOGIN_COOLDOWN_SECONDS) {
+    const remainingCooldown = Math.ceil(LOGIN_COOLDOWN_SECONDS - (currentTime - lastFailedLoginTime) / 1000);
+    alert(`Por favor espere ${remainingCooldown} segundos antes de intentar nuevamente.`);
+    return;
+  }
+  const password = document.getElementById('passwordInput').value;
+  if (password === '1344') {
+    isLoggedIn = true;
+    loginAttempts = 0;
+    lastFailedLoginTime = null;
+    document.getElementById('loginContainer').classList.add('hidden');
+    const mainContent = document.querySelector('.main-content');
+    mainContent.classList.add('visible');
+    const videoContainer = document.getElementById('videoContainer');
+    videoContainer.style.display = 'block';
+    const playlistContainer = document.getElementById('playlistContainer');
+    playlistContainer.style.display = 'block';
+    initializeVideoPage();
+  } else {
+    loginAttempts++;
+    lastFailedLoginTime = currentTime;
+    alert('Contraseña incorrecta');
+    document.getElementById('passwordInput').value = '';
+  }
+}
+document.getElementById('passwordInput').addEventListener('keypress', function (e) {
+  if (e.key === 'Enter') {
+    checkPassword();
+  }
+});
+document.addEventListener('keydown', handleTVNavigation);
+document.addEventListener('contextmenu', function (e) {
+  e.preventDefault();
+  return false;
 });</script>
-
-</body></html>
+</body>
+</html>
