@@ -250,6 +250,12 @@
       padding: 3px 6px;
       font-size: 0.7em;
     }
+    
+    .login-box input.tv-focus, 
+    .login-box button.tv-focus {
+      outline: 3px solid yellow;
+      background-color: rgba(255, 255, 0, 0.2);
+    }
   </style>
   <meta name="referrer" content="no-referrer">
 </head>
@@ -314,49 +320,49 @@ let videoUrls = [{
   errorDetails: ''
 }, {
   name: 'ESPN',
-  url: 'https://cdn8.vivozytv.com/espn/tracks-v1a1/mono.m3u8?remote=200.41.113.8&token=2dfa6160c828b53a7004c09b521df529a4cf92d8-13d47d7994c2eb748e207de723c44521-1736805912-1736795112',
+  url: 'https://jf2.naqsheala.com:999/hls/espn1hd.m3u8?md5=cDs3evx3R4uXGH7xuFFdfw&expires=1736891301',
   type: 'hls',
   isWorking: true,
   lastChecked: null,
   errorDetails: ''
 }, {
   name: 'ESPN 2',
-  url: 'https://pecdl.pricesaskeloadsc.com/espn2/tracks-v1a1/mono.m3u8?token=415e275713aaa81604922f407c3ea8c7757e5481-eb-1736777101-1736741101',
+  url: 'https://jf1.naqsheala.com:999/hls/espn22.m3u8?md5=MEuo2Q7X0CqVIw0EM7hexg&expires=1736889347',
   type: 'hls',
   isWorking: true,
   lastChecked: null,
   errorDetails: ''
 }, {
   name: 'ESPN 3',
-  url: 'https://cale.pricesaskeloadsc.com/espn3/tracks-v1a1/mono.m3u8?token=168098952ab44a144d4723900d4a385a9ce82418-c9-1736777192-1736741192',
+  url: 'https://d2hpc3rszq.fubohd.com/espn3/tracks-v1a1/mono.m3u8?token=1d4371cfdf60f9ab1aeb0338c76c456783ee18ae-80-1736918366-1736882366',
   type: 'hls',
   isWorking: true,
   lastChecked: null,
   errorDetails: ''
 }, {
   name: 'ESPN 4',
-  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792',
+  url: 'https://d2hpc3rszq.fubohd.com/espn4/tracks-v1a1/mono.m3u8?token=bc5365d1fed0db4ba30df966d459f01b9506e1c1-0b-1736918524-1736882524',
   type: 'hls',
   isWorking: true,
   lastChecked: null,
   errorDetails: ''
 }, {
   name: 'ESPN EXTRA',
-  url: 'https://5156.pricesaskeloadsc.com/espn5/tracks-v1a1/mono.m3u8?token=32b630820cbca8d63e0c343febad588878d1fef2-e4-1736777214-1736741214',
+  url: 'https://z29vzc.fubohd.com/espn5/tracks-v1a1/mono.m3u8?token=1d4f70cde256a38835ab25ebd3e47b6911f7b337-87-1736918551-1736882551',
   type: 'hls',
   isWorking: true,
   lastChecked: null,
   errorDetails: ''
 }, {
   name: 'ESPN Premium',
-  url: 'https://vals88.pricesaskeloadsc.com/espn_premium/tracks-v1a1/mono.m3u8?token=99eeaf820239dd431679e36e68c887c8fac4bcec-f3-1736777230-1736741230',
+  url: 'https://z29vzc.fubohd.com/espnpremium/tracks-v1a1/mono.m3u8?token=ac18fa3f5ffb943aad74170f85b5f33126506560-60-1736918575-1736882575',
   type: 'hls',
   isWorking: true,
   lastChecked: null,
   errorDetails: ''
 }, {
   name: 'Directv',
-  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792',
+  url: 'https://z29vzc.fubohd.com/dsports/tracks-v1a1/mono.m3u8?token=a553df0746e750a09ed56742c64a6bdad6d4e469-9a-1736918616-1736882616',
   type: 'hls',
   isWorking: true,
   lastChecked: null,
@@ -374,6 +380,13 @@ let currentFlv = null;
 let streamStatuses = {};
 let viewerCount = 0;
 const TV_KEYS = {
+  UP: 38,
+  DOWN: 40,
+  OK: 13,
+  LEFT: 37,
+  RIGHT: 39
+};
+const LOGIN_KEYS = {
   UP: 38,
   DOWN: 40,
   OK: 13
@@ -400,6 +413,7 @@ const STREAM_OPTIMIZATION_CONFIG = {
     }
   }
 };
+const LOGIN_PASSWORD = '12';
 let isLoggedIn = false;
 async function urlVerificationBot() {
   for (let i = 0; i < videoUrls.length; i++) {
@@ -596,6 +610,7 @@ function playUrl(url, type) {
   } else {
     video.src = url;
   }
+  video.pause();
   video.play();
 }
 function updatePlaylist() {
@@ -608,12 +623,16 @@ function updatePlaylist() {
     playButton.textContent = 'Reproducir';
     playButton.onclick = () => {
       playUrl(item.url, item.type);
+      const video = document.getElementById('video');
+      video.pause();
     };
     const nameSpan = document.createElement('span');
     nameSpan.className = 'playlist-name';
     nameSpan.textContent = item.name;
     nameSpan.onclick = () => {
       playUrl(item.url, item.type);
+      const video = document.getElementById('video');
+      video.pause();
     };
     playlistItem.appendChild(playButton);
     playlistItem.appendChild(nameSpan);
@@ -736,24 +755,9 @@ function updateViewerCount() {
   viewerCountContainer.textContent = `Personas viendo: ${viewerCount}`;
 }
 function handleTVNavigation(event) {
-  const loginContainer = document.getElementById('loginContainer');
-  const passwordInput = document.getElementById('passwordInput');
-  if (!isLoggedIn && loginContainer && !loginContainer.classList.contains('hidden')) {
-    if (event.keyCode === TV_KEYS.OK) {
-      checkPassword();
-      return;
-    }
-  }
-  document.body.onmousedown = function (e) {
-    if (e.button === 0) {
-      e.preventDefault();
-      return false;
-    }
-  };
   const playlistItems = document.querySelectorAll('.playlist-item');
   const videoPlayer = document.getElementById('video');
   const controls = document.querySelectorAll('.controls button, .controls select');
-  const navigationSections = ['playlist', 'videoPlayer', 'controls'];
   switch (event.keyCode) {
     case TV_KEYS.UP:
       navigateUp(playlistItems, videoPlayer, controls);
@@ -761,20 +765,14 @@ function handleTVNavigation(event) {
     case TV_KEYS.DOWN:
       navigateDown(playlistItems, videoPlayer, controls);
       break;
-    case TV_KEYS.OK:
-      selectCurrentItem(playlistItems, videoPlayer, controls);
-      break;
     case TV_KEYS.LEFT:
-      if (currentTVFocus.section === 'controls') {
-        currentTVFocus.index = Math.max(0, currentTVFocus.index - 1);
-        highlightCurrentItem(playlistItems, videoPlayer, controls);
-      }
+      navigateLeft(playlistItems, videoPlayer, controls);
       break;
     case TV_KEYS.RIGHT:
-      if (currentTVFocus.section === 'controls') {
-        currentTVFocus.index = Math.min(controls.length - 1, currentTVFocus.index + 1);
-        highlightCurrentItem(playlistItems, videoPlayer, controls);
-      }
+      navigateRight(playlistItems, videoPlayer, controls);
+      break;
+    case TV_KEYS.OK:
+      selectCurrentItem(playlistItems, videoPlayer, controls);
       break;
   }
 }
@@ -815,6 +813,24 @@ function navigateDown(playlistItems, videoPlayer, controls) {
       currentTVFocus.index++;
       highlightCurrentItem(playlistItems, videoPlayer, controls);
     }
+  }
+}
+function navigateLeft(playlistItems, videoPlayer, controls) {
+  if (currentTVFocus.section === 'controls') {
+    currentTVFocus.index = Math.max(0, currentTVFocus.index - 1);
+    highlightCurrentItem(playlistItems, videoPlayer, controls);
+  }
+  if (currentTVFocus.section === 'videoPlayer') {
+    videoPlayer.pause();
+  }
+}
+function navigateRight(playlistItems, videoPlayer, controls) {
+  if (currentTVFocus.section === 'controls') {
+    currentTVFocus.index = Math.min(controls.length - 1, currentTVFocus.index + 1);
+    highlightCurrentItem(playlistItems, videoPlayer, controls);
+  }
+  if (currentTVFocus.section === 'videoPlayer') {
+    videoPlayer.play();
   }
 }
 function selectCurrentItem(playlistItems, videoPlayer, controls) {
@@ -864,7 +880,7 @@ function checkPassword() {
   } else {
     loginAttempts++;
     lastFailedLoginTime = Date.now();
-    alert('Contraseña incorrecta');
+    alert('Contraseña incorrecta. Por favor, inténtelo de nuevo.');
   }
 }
 document.addEventListener('keydown', function (e) {
@@ -890,11 +906,44 @@ document.getElementById('passwordInput').addEventListener('keypress', function (
     checkPassword();
   }
 });
-document.getElementById('passwordInput').addEventListener('keydown', function (e) {
-  if (e.key === 'Enter') {
-    checkPassword();
+document.addEventListener('keydown', handleTVNavigation);
+function initializeLoginNavigation() {
+  currentTVFocus = {
+    section: 'login',
+    index: 0
+  };
+  const loginInput = document.getElementById('passwordInput');
+  const loginButton = document.querySelector('.login-box button');
+  function highlightLoginItem() {
+    loginInput.classList.remove('tv-focus');
+    loginButton.classList.remove('tv-focus');
+    if (currentTVFocus.index === 0) {
+      loginInput.classList.add('tv-focus');
+    } else {
+      loginButton.classList.add('tv-focus');
+    }
   }
-});
-document.addEventListener('keydown', handleTVNavigation);</script>
+  document.addEventListener('keydown', function (event) {
+    if (document.querySelector('.login-container:not(.hidden)')) {
+      switch (event.keyCode) {
+        case LOGIN_KEYS.UP:
+        case LOGIN_KEYS.DOWN:
+          currentTVFocus.index = currentTVFocus.index === 0 ? 1 : 0;
+          highlightLoginItem();
+          break;
+        case LOGIN_KEYS.OK:
+          if (currentTVFocus.index === 0) {
+            loginInput.focus();
+          } else {
+            checkPassword();
+          }
+          break;
+      }
+    }
+  });
+}
+document.addEventListener('DOMContentLoaded', function () {
+  initializeLoginNavigation();
+});</script>
 </body>
 </html>
