@@ -20,19 +20,47 @@
       -webkit-overflow-scrolling: touch; 
     }
     
-    .video-container {
-      max-width: 800px;
+    .video-section {
+      display: flex;
+      flex-direction: row-reverse;
+      gap: 20px;
+      max-width: 1200px;
       margin: 0 auto;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-      display: block;
     }
     
-    video {
+    #playlistContainer {
+      width: 150px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    
+    .playlist-item {
+      padding: 5px;
+      margin-bottom: 5px;
+      font-size: 0.8em;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    
+    .playlist-item button {
+      padding: 3px 6px;
+      font-size: 0.7em;
       width: 100%;
-      height: auto;
+    }
+    
+    .video-container {
+      flex: 1;
+      max-width: none;
+      width: 80%;
+      margin: 0;
+    }
+    
+    .playlist-name {
+      font-size: 0.85em;
+      margin-top: 4px;
+      word-wrap: break-word;
     }
     
     .controls {
@@ -88,20 +116,6 @@
       border-radius: 8px;
       -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS */
       overflow-y: auto;
-    }
-
-    .playlist-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-      padding: 10px;
-      background: #444;
-      border-radius: 4px;
-    }
-
-    .playlist-item button {
-      padding: 4px 8px;
     }
 
     .stream-status {
@@ -175,9 +189,6 @@
       padding: 10px;
       margin-top: 20px;
       border-radius: 8px;
-    }
-    .playlist-name {
-      cursor: pointer;
     }
     
     /* Add login styles */
@@ -262,36 +273,12 @@
       height: 12px;
       border-radius: 50%;
     }
-    .video-section {
-      display: flex;
-      gap: 20px;
+    
+    video {
+      width: 100%;
+      height: auto;
     }
     
-    #playlistContainer {
-      width: 200px;
-      max-height: 500px;
-      overflow-y: auto;
-    }
-    
-    .playlist-item {
-      padding: 5px;
-      margin-bottom: 5px;
-      font-size: 0.8em;
-    }
-    
-    .playlist-item button {
-      padding: 3px 6px;
-      font-size: 0.7em;
-    }
-    .video-container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-      display: block;
-    }
     .selected-stream-name {
       position: absolute;
       top: 50%;
@@ -305,6 +292,7 @@
       opacity: 1;
       transition: opacity 0.5s ease;
     }
+    
     .current-stream-name {
       position: absolute;
       top: 20px;
@@ -685,17 +673,25 @@ function updatePlaylist() {
   videoUrls.forEach((item, index) => {
     const playlistItem = document.createElement('div');
     playlistItem.className = 'playlist-item';
+    
     const playButton = document.createElement('button');
-    playButton.textContent = 'Reproducir';
+    playButton.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <polygon points="5,3 19,12 5,21"/>
+      </svg>
+    `;
+    playButton.title = item.name;
     playButton.onclick = () => {
       playUrl(item.url, item.type);
     };
+    
     const nameSpan = document.createElement('span');
     nameSpan.className = 'playlist-name';
     nameSpan.textContent = item.name;
     nameSpan.onclick = () => {
       playUrl(item.url, item.type);
     };
+    
     playlistItem.appendChild(playButton);
     playlistItem.appendChild(nameSpan);
     container.appendChild(playlistItem);
@@ -725,6 +721,8 @@ function initializeVideoPage() {
     }
   };
   document.getElementById('videoContainer').style.display = 'block';
+  document.getElementById('videoContainer').style.width = '80%';
+  
   initializeVideo();
   updatePlaylist();
   viewerCount++;
