@@ -20,47 +20,19 @@
       -webkit-overflow-scrolling: touch; 
     }
     
-    .video-section {
-      display: flex;
-      flex-direction: row-reverse;
-      gap: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    
-    #playlistContainer {
-      width: 150px;
-      max-height: 600px;
-      overflow-y: auto;
-    }
-    
-    .playlist-item {
-      padding: 5px;
-      margin-bottom: 5px;
-      font-size: 0.8em;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-    
-    .playlist-item button {
-      padding: 3px 6px;
-      font-size: 0.7em;
-      width: 100%;
-    }
-    
     .video-container {
-      flex: 1;
-      max-width: none;
-      width: 80%;
-      margin: 0;
+      max-width: 800px;
+      margin: 0 auto;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      display: block;
     }
     
-    .playlist-name {
-      font-size: 0.85em;
-      margin-top: 4px;
-      word-wrap: break-word;
+    video {
+      width: 100%;
+      height: auto;
     }
     
     .controls {
@@ -109,15 +81,57 @@
     }
     
     .playlist-container {
-      display: block;
-      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
       background: #333;
       padding: 15px;
       border-radius: 8px;
-      -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS */
-      overflow-y: auto;
     }
-
+    
+    .playlist-container.hidden {
+      display: none !important;
+    }
+    
+    .playlist-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 80px;
+      height: 80px;
+      padding: 8px;
+      background: #444;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .playlist-item:hover {
+      background: #555;
+    }
+    
+    .playlist-item button {
+      display: none;
+    }
+    
+    .playlist-name {
+      font-size: 0.7em;
+      text-align: center;
+      word-wrap: break-word;
+      max-width: 100%;
+      margin-top: 5px;
+    }
+    
+    .playlist-item::before {
+      content: '';
+      width: 40px;
+      height: 40px;
+      background: #666;
+      border-radius: 50%;
+      margin-bottom: 5px;
+    }
+    
     .stream-status {
       margin-top: 20px;
       background: #333;
@@ -189,6 +203,9 @@
       padding: 10px;
       margin-top: 20px;
       border-radius: 8px;
+    }
+    .playlist-name {
+      cursor: pointer;
     }
     
     /* Add login styles */
@@ -273,38 +290,49 @@
       height: 12px;
       border-radius: 50%;
     }
+    .video-section {
+      display: flex; 
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      align-items: flex-start;
+    }
     
-    video {
-      width: 100%;
+    #playlistContainer {
+      width: 200px;
+      padding: 10px;
+      background: #333;
+      border-radius: 8px;
+    }
+    
+    .playlist-item {
+      width: auto;
       height: auto;
+      min-height: 0;
+      padding: 8px;
+      margin-bottom: 5px;
+      display: block;
     }
     
-    .selected-stream-name {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.7);
-      color: white;
-      padding: 10px 20px;
-      border-radius: 5px;
-      z-index: 10;
-      opacity: 1;
-      transition: opacity 0.5s ease;
+    .playlist-item::before {
+      display: none;
     }
     
-    .current-stream-name {
-      position: absolute;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.7);
-      color: white;
-      padding: 10px 20px;
-      border-radius: 5px;
-      z-index: 10;
-      opacity: 1;
-      transition: opacity 0.5s ease;
+    .playlist-name {
+      font-size: 0.8em;
+      text-align: left;  
+      margin: 0;
+    }
+    
+    .stream-verification-results {
+      width: 100%;
+      margin-top: 20px;
+    }
+    
+    /* Add this to prevent scroll */
+    html, body {
+      scroll-behavior: smooth;
+      overscroll-behavior: none;
     }
   </style>
   <meta name="referrer" content="no-referrer">
@@ -320,10 +348,6 @@
   </div>
   <div class="main-content">
     <div class="video-section">
-      <div id="playlistContainer" class="playlist-container">
-        <h3>Lista de Reproductores</h3>
-        <div id="playlistItems"></div>
-      </div>
       <div class="video-container" id="videoContainer">
         <video id="video" controls></video>
         <div class="controls">
@@ -333,8 +357,12 @@
           <button class="fullscreen-btn" id="fullscreenButton">Pantalla Completa</button>
         </div>
       </div>
-      <div id="botResults" class="stream-verification-results"></div>
+      <div id="playlistContainer" class="playlist-container">
+        <h3>Lista de Reproductores</h3>
+        <div id="playlistItems"></div>
+      </div>
     </div>
+    <div id="botResults" class="stream-verification-results"></div>
     <div class="viewer-count">
       Viewer Count: <span id="viewerCount">0</span>
     </div>
@@ -494,36 +522,36 @@ function logStreamDetails(streamInfo) {
   console.log(`Stream: ${streamInfo.name}, URL: ${streamInfo.url}, Status: ${streamInfo.isWorking}, Last Checked: ${streamInfo.lastChecked}, Error Details: ${streamInfo.errorDetails}`);
 }
 function updateStreamStatus() {
-  const container = document.getElementById('playlistContainer');
-  let statusContainer = document.querySelector('.stream-status');
-  if (!statusContainer) {
-    statusContainer = document.createElement('div');
-    statusContainer.className = 'stream-status';
-    statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
-    container.appendChild(statusContainer);
-  }
+  const statusContainer = document.getElementById('botResults');
+  statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
+  
   const statusContent = document.createElement('div');
   videoUrls.forEach(item => {
     const status = item.isWorking ? 'good' : 'error';
     const statusItem = document.createElement('div');
     statusItem.className = 'status-item';
-    const indicator = document.createElement('div');
+    
+    const indicator = document.createElement('div'); 
     indicator.className = `status-indicator status-${status}`;
+    
     const details = document.createElement('div');
     details.className = 'status-details';
+    
     const name = document.createElement('div');
     name.className = 'status-name';
     name.textContent = item.name;
+    
     const message = document.createElement('div');
     message.className = 'status-message';
-    message.textContent = item.errorDetails || 'Reproducion estable';
+    message.textContent = item.errorDetails || 'Reproduccion estable';
+    
     details.appendChild(name);
     details.appendChild(message);
     statusItem.appendChild(indicator);
     statusItem.appendChild(details);
     statusContent.appendChild(statusItem);
   });
-  statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
+
   statusContainer.appendChild(statusContent);
 }
 async function detectNetworkSpeed() {
@@ -563,6 +591,9 @@ function trackNetworkPerformance(url, loadTime) {
   }
 }
 function playUrl(url, type) {
+  const playlistContainer = document.getElementById('playlistContainer');
+  playlistContainer.classList.add('hidden');
+  
   if (currentHls) {
     currentHls.destroy();
     currentHls = null;
@@ -666,6 +697,10 @@ function playUrl(url, type) {
       streamNameDisplay.remove();
     }, 500);
   }, 2000);
+  
+  setTimeout(() => {
+    playlistContainer.classList.remove('hidden');
+  }, 2000);
 }
 function updatePlaylist() {
   const container = document.getElementById('playlistItems');
@@ -673,26 +708,14 @@ function updatePlaylist() {
   videoUrls.forEach((item, index) => {
     const playlistItem = document.createElement('div');
     playlistItem.className = 'playlist-item';
-    
-    const playButton = document.createElement('button');
-    playButton.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <polygon points="5,3 19,12 5,21"/>
-      </svg>
-    `;
-    playButton.title = item.name;
-    playButton.onclick = () => {
+    playlistItem.onclick = () => {
       playUrl(item.url, item.type);
     };
     
     const nameSpan = document.createElement('span');
     nameSpan.className = 'playlist-name';
     nameSpan.textContent = item.name;
-    nameSpan.onclick = () => {
-      playUrl(item.url, item.type);
-    };
     
-    playlistItem.appendChild(playButton);
     playlistItem.appendChild(nameSpan);
     container.appendChild(playlistItem);
   });
@@ -721,8 +744,7 @@ function initializeVideoPage() {
     }
   };
   document.getElementById('videoContainer').style.display = 'block';
-  document.getElementById('videoContainer').style.width = '80%';
-  
+  document.getElementById('playlistContainer').style.display = 'block';
   initializeVideo();
   updatePlaylist();
   viewerCount++;
@@ -754,22 +776,29 @@ function updateViewerCount() {
   viewerCountContainer.textContent = `Personas viendo: ${viewerCount}`;
 }
 function handleTVNavigation(event) {
+  // Prevent default scroll behavior for arrow keys
+  if (event.keyCode === TV_KEYS.UP || event.keyCode === TV_KEYS.DOWN) {
+    event.preventDefault();
+  }
+
   document.body.onmousedown = function (e) {
     if (e.button === 0) {
-      e.preventDefault();
+      e.preventDefault(); 
       return false;
     }
   };
+
   const playlistItems = document.querySelectorAll('.playlist-item');
   const videoPlayer = document.getElementById('video');
   const controls = document.querySelectorAll('.controls select');
   const fullscreenButton = document.getElementById('fullscreenButton');
   const navigationSections = ['playlist', 'videoPlayer', 'controls', 'fullscreenButton'];
+
   switch (event.keyCode) {
     case TV_KEYS.UP:
       navigateUp(playlistItems, videoPlayer, controls, fullscreenButton);
       break;
-    case TV_KEYS.DOWN:
+    case TV_KEYS.DOWN: 
       navigateDown(playlistItems, videoPlayer, controls, fullscreenButton);
       break;
     case TV_KEYS.OK:
@@ -778,6 +807,9 @@ function handleTVNavigation(event) {
   }
 }
 function navigateUp(playlistItems, videoPlayer, controls, fullscreenButton) {
+  // Prevent page scroll
+  window.scrollTo(window.scrollX, window.scrollY);
+
   if (currentTVFocus.section === 'playlist' && currentTVFocus.index > 0) {
     currentTVFocus.index--;
     highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
@@ -801,6 +833,9 @@ function navigateUp(playlistItems, videoPlayer, controls, fullscreenButton) {
   }
 }
 function navigateDown(playlistItems, videoPlayer, controls, fullscreenButton) {
+  // Prevent page scroll
+  window.scrollTo(window.scrollX, window.scrollY);
+
   if (currentTVFocus.section === 'playlist' && currentTVFocus.index < playlistItems.length - 1) {
     currentTVFocus.index++;
     highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
@@ -825,10 +860,17 @@ function selectCurrentItem(playlistItems, videoPlayer, controls, fullscreenButto
   const now = Date.now();
   const timeSinceLastPress = now - lastOKPressTime;
   if (currentTVFocus.section === 'playlist' && playlistItems[currentTVFocus.index]) {
+    const playlistContainer = document.getElementById('playlistContainer');
+    playlistContainer.classList.add('hidden');
+    
     const playButton = playlistItems[currentTVFocus.index].querySelector('button');
     if (playButton) {
       playButton.click();
     }
+    
+    setTimeout(() => {
+      playlistContainer.classList.remove('hidden');
+    }, 2000);
   } else if (currentTVFocus.section === 'controls' && controls[currentTVFocus.index]) {
     controls[currentTVFocus.index].click();
   } else if (currentTVFocus.section === 'fullscreenButton') {
@@ -1004,7 +1046,22 @@ function handleTouchMove(evt) {
 function handleTouchEnd() {
   window.touchStartY = null;
   window.touchStartX = null;
+  
+  const playlistContainer = document.getElementById('playlistContainer');
+  const clickedPlaylistItem = event.target.closest('.playlist-item');
+  
+  if (clickedPlaylistItem) {
+    playlistContainer.classList.add('hidden');
+    setTimeout(() => {
+      playlistContainer.classList.remove('hidden'); 
+    }, 2000);
+  }
 }
+document.addEventListener('keydown', function(e) {
+  if ([38, 40].includes(e.keyCode)) { // Up and Down arrow keys
+    e.preventDefault();
+  }
+}, false);
 </script>
 </body>
 </html>
