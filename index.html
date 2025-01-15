@@ -83,6 +83,8 @@
       background: #333;
       padding: 15px;
       border-radius: 8px;
+      -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS */
+      overflow-y: auto;
     }
 
     .playlist-item {
@@ -722,6 +724,11 @@ function initializeVideoPage() {
   document.querySelector('.main-content').style.display = 'block';
   urlVerificationBot();
   setInterval(urlVerificationBot, 900000);
+  
+  const playlistContainer = document.getElementById('playlistContainer');
+  playlistContainer.addEventListener('touchstart', handleTouchStart, false);
+  playlistContainer.addEventListener('touchmove', handleTouchMove, {passive: false});
+  playlistContainer.addEventListener('touchend', handleTouchEnd, false);
 }
 function checkReferrer() {
   return isLoggedIn;
@@ -923,6 +930,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+  const playlistContainer = document.getElementById('playlistContainer');
+  playlistContainer.addEventListener('touchstart', handleTouchStart, false);
+  playlistContainer.addEventListener('touchmove', handleTouchMove, {passive: false});
+  playlistContainer.addEventListener('touchend', handleTouchEnd, false);
 });
 window.addEventListener('error', function(e) {
   console.error('Login Error:', e.message);
@@ -949,6 +960,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+function handleTouchStart(evt) {
+  const firstTouch = evt.touches[0];
+  window.touchStartY = firstTouch.clientY;
+}
+
+function handleTouchMove(evt) {
+  if (!window.touchStartY) {
+    return;
+  }
+
+  const playlistContainer = document.getElementById('playlistContainer');
+  const touch = evt.touches[0];
+  const deltaY = window.touchStartY - touch.clientY;
+  
+  playlistContainer.scrollTop += deltaY;
+  window.touchStartY = touch.clientY;
+
+  // Prevent default scrolling behavior
+  evt.preventDefault();
+}
+
+function handleTouchEnd() {
+  window.touchStartY = null;
+}
 </script>
 </body>
 </html>
