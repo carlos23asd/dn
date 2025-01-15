@@ -6,7 +6,7 @@
   <script src="https://cdn.jsdelivr.net/npm/axios@0.27.2/dist/axios.min.js"></script>
   <style>
     body {
-      margin: 0;
+      margin: 0; 
       padding: 20px;
       background: #1a1a1a;
       color: white;
@@ -15,6 +15,8 @@
       -moz-user-select: none; 
       -ms-user-select: none;
       user-select: none;
+      overflow-y: auto; 
+      -webkit-overflow-scrolling: touch; 
     }
     
     .video-container {
@@ -226,6 +228,10 @@
     
     .main-content {
       display: none;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      height: auto;
+      min-height: 100%;
     }
     
     .main-content.visible {
@@ -934,6 +940,9 @@ document.addEventListener('DOMContentLoaded', () => {
   playlistContainer.addEventListener('touchstart', handleTouchStart, false);
   playlistContainer.addEventListener('touchmove', handleTouchMove, {passive: false});
   playlistContainer.addEventListener('touchend', handleTouchEnd, false);
+  document.body.addEventListener('touchstart', handleTouchStart, false);
+  document.body.addEventListener('touchmove', handleTouchMove, {passive: false}); 
+  document.body.addEventListener('touchend', handleTouchEnd, false);
 });
 window.addEventListener('error', function(e) {
   console.error('Login Error:', e.message);
@@ -970,15 +979,21 @@ function handleTouchMove(evt) {
     return;
   }
 
-  const playlistContainer = document.getElementById('playlistContainer');
   const touch = evt.touches[0];
   const deltaY = window.touchStartY - touch.clientY;
   
-  playlistContainer.scrollTop += deltaY;
+  // Allow both playlist container and page scrolling
+  const playlistContainer = document.getElementById('playlistContainer');
+  const isPlaylistScrolling = evt.target.closest('#playlistContainer');
+  
+  if (isPlaylistScrolling) {
+    playlistContainer.scrollTop += deltaY;
+    evt.preventDefault(); // Prevent page scroll when in playlist
+  } else {
+    window.scrollBy(0, deltaY); // Allow page scroll otherwise
+  }
+  
   window.touchStartY = touch.clientY;
-
-  // Prevent default scrolling behavior
-  evt.preventDefault();
 }
 
 function handleTouchEnd() {
