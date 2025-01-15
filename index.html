@@ -16,6 +16,7 @@
       -ms-user-select: none;
       user-select: none;
       overflow-y: auto; 
+      overflow-x: auto;
       -webkit-overflow-scrolling: touch; 
     }
     
@@ -229,6 +230,7 @@
     .main-content {
       display: none;
       overflow-y: auto;
+      overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       height: auto;
       min-height: 100%;
@@ -469,6 +471,7 @@ const STREAM_OPTIMIZATION_CONFIG = {
 let isLoggedIn = false;
 let lastOKPressTime = 0;
 let isFullScreen = false;
+let touchStartX = null;
 async function urlVerificationBot() {
   for (let i = 0; i < videoUrls.length; i++) {
     const url = videoUrls[i].url;
@@ -972,15 +975,17 @@ document.addEventListener('DOMContentLoaded', () => {
 function handleTouchStart(evt) {
   const firstTouch = evt.touches[0];
   window.touchStartY = firstTouch.clientY;
+  window.touchStartX = firstTouch.clientX;
 }
 
 function handleTouchMove(evt) {
-  if (!window.touchStartY) {
+  if (!window.touchStartY || !window.touchStartX) {
     return;
   }
 
   const touch = evt.touches[0];
   const deltaY = window.touchStartY - touch.clientY;
+  const deltaX = window.touchStartX - touch.clientX;
   
   // Allow both playlist container and page scrolling
   const playlistContainer = document.getElementById('playlistContainer');
@@ -990,14 +995,17 @@ function handleTouchMove(evt) {
     playlistContainer.scrollTop += deltaY;
     evt.preventDefault(); // Prevent page scroll when in playlist
   } else {
-    window.scrollBy(0, deltaY); // Allow page scroll otherwise
+    // Allow both vertical and horizontal scrolling
+    window.scrollBy(deltaX, deltaY);
   }
   
   window.touchStartY = touch.clientY;
+  window.touchStartX = touch.clientX;
 }
 
 function handleTouchEnd() {
   window.touchStartY = null;
+  window.touchStartX = null;
 }
 </script>
 </body>
