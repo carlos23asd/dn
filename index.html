@@ -88,6 +88,7 @@
       background: #333;
       padding: 15px;
       border-radius: 8px;
+      transition: display 0.3s ease-in-out;
     }
     
     .playlist-container.hidden {
@@ -332,7 +333,16 @@
     /* Add this to prevent scroll */
     html, body {
       scroll-behavior: smooth;
-      overscroll-behavior: none;
+      overscroll-behavior: contain;
+      height: 100%;
+    }
+
+    .main-content {
+      overflow-y: auto;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;  
+      height: auto; 
+      min-height: 100%;
     }
   </style>
   <meta name="referrer" content="no-referrer">
@@ -461,6 +471,8 @@ const TV_KEYS = {
   UP: 38,
   DOWN: 40,
   OK: 13,
+  LEFT: 37,
+  RIGHT: 39,
   OK_DOUBLE_PRESS_TIMEOUT: 300
 };
 const VIDEO_CONTROLS = {
@@ -709,7 +721,12 @@ function updatePlaylist() {
     const playlistItem = document.createElement('div');
     playlistItem.className = 'playlist-item';
     playlistItem.onclick = () => {
+      const playlistContainer = document.getElementById('playlistContainer');
+      playlistContainer.classList.add('hidden');
       playUrl(item.url, item.type);
+      setTimeout(() => {
+        playlistContainer.classList.remove('hidden');
+      }, 2000);
     };
     
     const nameSpan = document.createElement('span');
@@ -777,7 +794,7 @@ function updateViewerCount() {
 }
 function handleTVNavigation(event) {
   // Prevent default scroll behavior for arrow keys
-  if (event.keyCode === TV_KEYS.UP || event.keyCode === TV_KEYS.DOWN) {
+  if ([TV_KEYS.UP, TV_KEYS.DOWN, TV_KEYS.LEFT, TV_KEYS.RIGHT].includes(event.keyCode)) {
     event.preventDefault();
   }
 
@@ -792,6 +809,7 @@ function handleTVNavigation(event) {
   const videoPlayer = document.getElementById('video');
   const controls = document.querySelectorAll('.controls select');
   const fullscreenButton = document.getElementById('fullscreenButton');
+  const playlistContainer = document.getElementById('playlistContainer');
   const navigationSections = ['playlist', 'videoPlayer', 'controls', 'fullscreenButton'];
 
   switch (event.keyCode) {
@@ -803,6 +821,12 @@ function handleTVNavigation(event) {
       break;
     case TV_KEYS.OK:
       selectCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
+      break;
+    case TV_KEYS.LEFT:
+      playlistContainer.style.display = 'block';
+      break;
+    case TV_KEYS.RIGHT:
+      playlistContainer.style.display = 'none';
       break;
   }
 }
@@ -863,10 +887,10 @@ function selectCurrentItem(playlistItems, videoPlayer, controls, fullscreenButto
     const playlistContainer = document.getElementById('playlistContainer');
     playlistContainer.classList.add('hidden');
     
-    const playButton = playlistItems[currentTVFocus.index].querySelector('button');
-    if (playButton) {
-      playButton.click();
-    }
+    // Get URL and type for selected playlist item 
+    const selectedUrl = videoUrls[currentTVFocus.index].url;
+    const selectedType = videoUrls[currentTVFocus.index].type;
+    playUrl(selectedUrl, selectedType);
     
     setTimeout(() => {
       playlistContainer.classList.remove('hidden');
@@ -1017,7 +1041,6 @@ function handleTouchStart(evt) {
   window.touchStartY = firstTouch.clientY;
   window.touchStartX = firstTouch.clientX;
 }
-
 function handleTouchMove(evt) {
   if (!window.touchStartY || !window.touchStartX) {
     return;
@@ -1026,23 +1049,31 @@ function handleTouchMove(evt) {
   const touch = evt.touches[0];
   const deltaY = window.touchStartY - touch.clientY;
   const deltaX = window.touchStartX - touch.clientX;
-  
-  // Allow both playlist container and page scrolling
+
   const playlistContainer = document.getElementById('playlistContainer');
   const isPlaylistScrolling = evt.target.closest('#playlistContainer');
   
+  // Handle vertical scrolling
   if (isPlaylistScrolling) {
     playlistContainer.scrollTop += deltaY;
-    evt.preventDefault(); // Prevent page scroll when in playlist
+    evt.preventDefault();
   } else {
-    // Allow both vertical and horizontal scrolling
-    window.scrollBy(deltaX, deltaY);
+    window.scrollBy(0, deltaY);
+  }
+
+  // Handle horizontal swipes for playlist
+  if (Math.abs(deltaX) > Math.abs(deltaY)) { // If horizontal swipe is more prominent
+    evt.preventDefault();
+    if (deltaX > 50) { // Swipe left
+      playlistContainer.style.display = 'block';
+    } else if (deltaX < -50) { // Swipe right 
+      playlistContainer.style.display = 'none';
+    }
   }
   
   window.touchStartY = touch.clientY;
   window.touchStartX = touch.clientX;
 }
-
 function handleTouchEnd() {
   window.touchStartY = null;
   window.touchStartX = null;
@@ -1051,14 +1082,16 @@ function handleTouchEnd() {
   const clickedPlaylistItem = event.target.closest('.playlist-item');
   
   if (clickedPlaylistItem) {
-    playlistContainer.classList.add('hidden');
+    const index = Array.from(clickedPlaylistItem.parentNode.children).indexOf(clickedPlaylistItem);
+    playlistContainer.style.display = 'none';
+    playUrl(videoUrls[index].url, videoUrls[index].type);
     setTimeout(() => {
-      playlistContainer.classList.remove('hidden'); 
+      playlistContainer.style.display = 'block';
     }, 2000);
   }
 }
 document.addEventListener('keydown', function(e) {
-  if ([38, 40].includes(e.keyCode)) { // Up and Down arrow keys
+  if ([37, 38, 39, 40].includes(e.keyCode)) { // Left, Up, Right, Down arrow keys
     e.preventDefault();
   }
 }, false);
