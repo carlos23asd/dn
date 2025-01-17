@@ -1,4 +1,6 @@
- <html><head><base href="https://example.com/">
+ <html>
+<head>
+  <base href="https://example.com/">
   <title>Dn streaming</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/flv.js@latest"></script>
@@ -402,34 +404,34 @@
       user-select: none;
     }
     
-    /* Mobile-specific adjustments for login */
-    @media (max-width: 600px) {
-      .login-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-      }
+    /* Improved mobile login styles */
+    input[type="password"], select {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      font-size: 16px; /* Prevents auto-zoom on iOS */
+      padding: 12px;
+      width: 100%;
+      box-sizing: border-box;
+      margin: 10px 0;
+    }
 
-      .login-box {
-        width: 90%;
-        max-width: 400px;
-        padding: 20px;
-      }
+    .login-box button {
+      touch-action: manipulation;
+      font-size: 16px;
+      padding: 12px;
+      margin-top: 10px;
+    }
 
-      .login-box input, 
-      .login-box select,
-      .login-box button {
-        width: 100%;
-        box-sizing: border-box;
-        margin-bottom: 10px;
-        touch-action: manipulation;
-      }
+    .login-box {
+      width: 90%;
+      max-width: 400px;
+    }
 
-      /* Prevent zooming on input focus */
-      input[type="password"], 
-      select {
-        font-size: 16px;
+    /* Prevent auto-zoom on input focus */
+    @media screen and (max-width: 768px) {
+      input[type="password"], select {
+        font-size: 16px !important;
       }
     }
   </style>
@@ -440,14 +442,28 @@
   <div id="loginContainer" class="login-container">
     <div class="login-box">
       <h2>Iniciar Sesión</h2>
-      <select id="loginType">
+      <select id="loginType" tabindex="1">
         <option value="user">Usuario</option>
         <option value="admin">Administrador</option>
       </select>
-      <input type="password" id="passwordInput" placeholder="Contraseña" autocomplete="off">
-      <button onclick="checkPassword()">Ingresar</button>
+      <input 
+        type="password" 
+        id="passwordInput" 
+        placeholder="Contraseña" 
+        autocomplete="off" 
+        tabindex="2"
+        inputmode="numeric"
+        pattern="[0-9]*"
+      >
+      <button 
+        onclick="checkPassword()" 
+        tabindex="3"
+      >
+        Ingresar
+      </button>
     </div>
   </div>
+  
   <div id="adminControls" class="admin-controls hidden">
     <h3>Controles de Administrador</h3>
     <div class="stream-editor">
@@ -538,41 +554,10 @@
         return originalCreateElement.call(document, tagName);
       };
 
-      window.checkPassword = function() {
-        const loginType = document.getElementById('loginType').value;
-        const passwordInput = document.getElementById('passwordInput');
-        const password = passwordInput.value.trim();
-        passwordInput.value = '';
-
-        if ((loginType === 'user' && (password === '12' || password === '12 ' || password === ' 12')) ||
-            (loginType === 'admin' && password === '2003')) {
-          isLoggedIn = true;
-          isAdmin = loginType === 'admin';
-          loginAttempts = 0;
-          lastFailedLoginTime = null;
-
-          document.getElementById('loginContainer').classList.toggle('hidden', true);
-          document.querySelector('.main-content').classList.toggle('visible', true);
-          document.getElementById('adminControls').classList.toggle('hidden', !isAdmin);
-
-          const videoContainer = document.getElementById('videoContainer');
-          videoContainer.style.display = 'block';
-          videoContainer.classList.remove('hidden');
-
-          const playlistContainer = document.getElementById('playlistContainer');
-          playlistContainer.style.display = 'block';
-          playlistContainer.classList.remove('hidden');
-
-          loadStreams();
-          initializeVideoPage();
-          if (isAdmin) {
-            updateAdminStreamsList();
-          }
-        } else {
-          loginAttempts++;
-          lastFailedLoginTime = Date.now();
-          window.alert('Contraseña incorrecta');
-        }
+      window.checkPassword = function(a,b){
+        return (function(x,y){
+          return x === '12' && y === 'user' || x === '2003' && y === 'admin';
+        })(a,b);
       };
 
       let loginAttempts = 0;
@@ -1389,35 +1374,62 @@
         const loginContainer = document.getElementById('loginContainer');
         const loginType = document.getElementById('loginType');
         const passwordInput = document.getElementById('passwordInput');
-        const loginButton = loginContainer.querySelector('button');
+        const loginButton = document.querySelector('.login-box button');
 
-        // Prevent zoom on input focus for mobile
+        // Prevent auto-zoom
         passwordInput.addEventListener('focus', function() {
-          document.querySelector('meta[name="viewport"]').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+          document.body.style.zoom = 1;
+          loginContainer.style.position = 'fixed';
+          loginContainer.style.top = '0';
+          loginContainer.style.left = '0';
+          loginContainer.style.width = '100%';
+          loginContainer.style.height = '100%';
         });
 
         passwordInput.addEventListener('blur', function() {
-          document.querySelector('meta[name="viewport"]').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+          document.body.style.zoom = '';
+          loginContainer.style.position = '';
+          loginContainer.style.top = '';
+          loginContainer.style.left = '';
+          loginContainer.style.width = '';
+          loginContainer.style.height = '';
         });
 
-        // Enhanced touch support for login
+        // Add keyboard navigation for mobile
+        loginType.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            passwordInput.focus();
+          }
+        });
+
+        passwordInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            checkPassword();
+          }
+        });
+
+        // Touch and click handling
         loginButton.addEventListener('touchstart', function(e) {
+          e.preventDefault();
+          this.focus();
+          checkPassword();
+        });
+
+        loginButton.addEventListener('click', function(e) {
           e.preventDefault();
           checkPassword();
         });
 
-        loginType.addEventListener('touchstart', function(e) {
-          e.preventDefault();
-        });
-
+        // Disable zoom on inputs
         passwordInput.addEventListener('touchstart', function(e) {
           e.preventDefault();
+          this.focus();
         });
 
-        // Prevent default touch behaviors
-        loginContainer.addEventListener('touchmove', function(e) {
+        // Prevent context menu
+        loginContainer.addEventListener('contextmenu', function(e) {
           e.preventDefault();
-        }, { passive: false });
+        });
       });
     })();
   </script>
