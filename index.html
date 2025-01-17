@@ -1,6 +1,4 @@
- <html>
-<head>
-  <base href="https://example.com/">
+<html><head><base href="https://example.com/">
   <title>Dn streaming</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/flv.js@latest"></script>
@@ -1348,17 +1346,26 @@
         window.touchStartX = touch.clientX;
       }
 
-      function handleTouchEnd() {
+      function handleTouchEnd(event) {
         window.touchStartY = null;
         window.touchStartX = null;
         
-        const playlistContainer = document.getElementById('playlistContainer');
         const clickedPlaylistItem = event.target.closest('.playlist-item');
         
         if (clickedPlaylistItem) {
+          const index = Array.from(clickedPlaylistItem.parentNode.children).indexOf(clickedPlaylistItem);
+          const selectedStream = videoUrls[index];
+          
+          // Hide playlist immediately
+          const playlistContainer = document.getElementById('playlistContainer');
           playlistContainer.classList.add('hidden');
+          
+          // Play the selected stream
+          playUrl(selectedStream.url, selectedStream.type);
+          
+          // Reshow playlist after a delay
           setTimeout(() => {
-            playlistContainer.classList.remove('hidden'); 
+            playlistContainer.classList.remove('hidden');
           }, 2000);
         }
       }
