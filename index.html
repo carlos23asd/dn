@@ -401,6 +401,37 @@
       -ms-user-select: none;
       user-select: none;
     }
+    
+    /* Mobile-specific adjustments for login */
+    @media (max-width: 600px) {
+      .login-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .login-box {
+        width: 90%;
+        max-width: 400px;
+        padding: 20px;
+      }
+
+      .login-box input, 
+      .login-box select,
+      .login-box button {
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 10px;
+        touch-action: manipulation;
+      }
+
+      /* Prevent zooming on input focus */
+      input[type="password"], 
+      select {
+        font-size: 16px;
+      }
+    }
   </style>
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -507,10 +538,41 @@
         return originalCreateElement.call(document, tagName);
       };
 
-      window.checkPassword = function(a,b){
-        return (function(x,y){
-          return x === '12' && y === 'user' || x === '2003' && y === 'admin';
-        })(a,b);
+      window.checkPassword = function() {
+        const loginType = document.getElementById('loginType').value;
+        const passwordInput = document.getElementById('passwordInput');
+        const password = passwordInput.value.trim();
+        passwordInput.value = '';
+
+        if ((loginType === 'user' && (password === '12' || password === '12 ' || password === ' 12')) ||
+            (loginType === 'admin' && password === '2003')) {
+          isLoggedIn = true;
+          isAdmin = loginType === 'admin';
+          loginAttempts = 0;
+          lastFailedLoginTime = null;
+
+          document.getElementById('loginContainer').classList.toggle('hidden', true);
+          document.querySelector('.main-content').classList.toggle('visible', true);
+          document.getElementById('adminControls').classList.toggle('hidden', !isAdmin);
+
+          const videoContainer = document.getElementById('videoContainer');
+          videoContainer.style.display = 'block';
+          videoContainer.classList.remove('hidden');
+
+          const playlistContainer = document.getElementById('playlistContainer');
+          playlistContainer.style.display = 'block';
+          playlistContainer.classList.remove('hidden');
+
+          loadStreams();
+          initializeVideoPage();
+          if (isAdmin) {
+            updateAdminStreamsList();
+          }
+        } else {
+          loginAttempts++;
+          lastFailedLoginTime = Date.now();
+          window.alert('Contraseña incorrecta');
+        }
       };
 
       let loginAttempts = 0;
@@ -1322,6 +1384,40 @@
       }, false);
       document.addEventListener('DOMContentLoaded', () => {
         loadStreams();
+      });
+      document.addEventListener('DOMContentLoaded', () => {
+        const loginContainer = document.getElementById('loginContainer');
+        const loginType = document.getElementById('loginType');
+        const passwordInput = document.getElementById('passwordInput');
+        const loginButton = loginContainer.querySelector('button');
+
+        // Prevent zoom on input focus for mobile
+        passwordInput.addEventListener('focus', function() {
+          document.querySelector('meta[name="viewport"]').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+        });
+
+        passwordInput.addEventListener('blur', function() {
+          document.querySelector('meta[name="viewport"]').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+        });
+
+        // Enhanced touch support for login
+        loginButton.addEventListener('touchstart', function(e) {
+          e.preventDefault();
+          checkPassword();
+        });
+
+        loginType.addEventListener('touchstart', function(e) {
+          e.preventDefault();
+        });
+
+        passwordInput.addEventListener('touchstart', function(e) {
+          e.preventDefault();
+        });
+
+        // Prevent default touch behaviors
+        loginContainer.addEventListener('touchmove', function(e) {
+          e.preventDefault();
+        }, { passive: false });
       });
     })();
   </script>
