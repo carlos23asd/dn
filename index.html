@@ -1,3 +1,4 @@
+  <html><head><base href="https://example.com/">
   <title>Dn streaming</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/flv.js@latest"></script>
@@ -716,9 +717,6 @@
       }
     }
     function playUrl(url, type) {
-      const playlistContainer = document.getElementById('playlistContainer');
-      playlistContainer.classList.add('hidden');
-      
       if (currentHls) {
         currentHls.destroy();
         currentHls = null;
@@ -821,10 +819,6 @@
         setTimeout(() => {
           streamNameDisplay.remove();
         }, 500);
-      }, 2000);
-      
-      setTimeout(() => {
-        playlistContainer.classList.remove('hidden');
       }, 2000);
     }
     function updatePlaylist() {
@@ -998,15 +992,8 @@
       const now = Date.now();
       const timeSinceLastPress = now - lastOKPressTime;
       if (currentTVFocus.section === 'playlist' && playlistItems[currentTVFocus.index]) {
-        const playlistContainer = document.getElementById('playlistContainer');
-        playlistContainer.classList.add('hidden');
-        
         const selectedItem = videoUrls[currentTVFocus.index];
         playUrl(selectedItem.url, selectedItem.type);
-        
-        setTimeout(() => {
-          playlistContainer.classList.remove('hidden');
-        }, 2000);
       } else if (currentTVFocus.section === 'controls' && controls[currentTVFocus.index]) {
         controls[currentTVFocus.index].click();
       } else if (currentTVFocus.section === 'fullscreenButton') {
@@ -1308,14 +1295,8 @@
       window.touchStartY = null;
       window.touchStartX = null;
       
-      const playlistContainer = document.getElementById('playlistContainer');
       const clickedPlaylistItem = event.target.closest('.playlist-item');
-      
       if (clickedPlaylistItem) {
-        playlistContainer.classList.add('hidden');
-        setTimeout(() => {
-          playlistContainer.classList.remove('hidden'); 
-        }, 2000);
       }
     }
     document.addEventListener('keydown', function(e) {
