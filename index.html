@@ -1,6 +1,9 @@
   <html><head><base href="https://example.com/">
   <title>Dn streaming</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://cdn.jsdelivr.ne<html><head><base href="https://example.com/">
+  <title>Dn streaming</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/flv.js@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/puppeteer-core@1.24.0/dist/puppeteer-core.cjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios@0.27.2/dist/axios.min.js"></script>
@@ -17,7 +20,8 @@
       user-select: none;
       overflow-y: auto; 
       overflow-x: auto;
-      -webkit-overflow-scrolling: touch; 
+      -webkit-overflow-scrolling: touch;
+      overflow-x: hidden;
     }
     
     .video-container {
@@ -88,10 +92,11 @@
       background: #333;
       padding: 15px;
       border-radius: 8px;
+      transition: transform 0.3s ease-out;
     }
     
     .playlist-container.hidden {
-      display: none !important;
+      transform: translateX(100%);
     }
     
     .playlist-item {
@@ -395,11 +400,45 @@
     .stream-item .edit {
       background: #2196F3;
     }
-    * { 
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
+    
+    /* Add cross-browser compatibility styles */
+    input[type="password"] {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    /* Add IE/Edge specific styles */
+    @media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+      .login-box {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);  
+      }
+    }
+
+    /* Add Safari specific styles */
+    @supports (-webkit-touch-callout: none) {
+      .login-box {
+        -webkit-backdrop-filter: blur(5px);
+      }
+      
+      input[type="password"] {
+        -webkit-appearance: none;
+        border-radius: 0;
+      }
+    }
+    .password-error {
+      color: #f44336;
+      margin-top: 10px;
+      font-size: 14px;
+      display: none;
+      text-align: center;
     }
   </style>
   <meta name="referrer" content="no-referrer">
@@ -415,6 +454,7 @@
       </select>
       <input type="password" id="passwordInput" placeholder="Contraseña" autocomplete="off">
       <button onclick="checkPassword()">Ingresar</button>
+      <div id="passwordError" class="password-error">Contraseña incorrecta</div>
     </div>
   </div>
   <div id="adminControls" class="admin-controls hidden">
@@ -457,873 +497,886 @@
     </div>
   </div>
   <script>
-    (function() {
-      document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        return false;
+    let loginAttempts = 0;
+    let lastFailedLoginTime = null;
+    const LOGIN_COOLDOWN_SECONDS = 30;
+    let videoUrls = [{
+      name: 'Canal Caracol',
+      url: 'https://stream.gia.tv/giatv/giatv-Gary2CanalGary2Canal/Gary2CanalGary2Canal/chunks.m3u8',
+      type: 'hls',
+      isWorking: true,
+      lastChecked: null,
+      errorDetails: ''
+    }, {
+      name: 'Simpson 24/7',
+      url: 'https://stream-cdn-iad2.vaughnsoft.net/play/live_simpson_maniahd193.flv',
+      type: 'flv',
+      isWorking: true,
+      lastChecked: null,
+      errorDetails: ''
+    }, {
+      name: 'Win+',
+      url: 'https://14c5.pricesaskeloadsc.com/winplusonline1/tracks-v1a1/mono.m3u8?token=225a018d037f25863cdf896a06973b354d0bf35d-b2-1736775912-1736739912',
+      type: 'hls',
+      isWorking: true,
+      lastChecked: null,
+      errorDetails: ''
+    }, {
+      name: 'ESPN',
+      url: 'https://cdn8.vivozytv.com/espn/tracks-v1a1/mono.m3u8?remote=200.41.113.8&token=2dfa6160c828b53a7004c09b521df529a4cf92d8-13d47d7994c2eb748e207de723c44521-1736805912-1736795112',
+      type: 'hls',
+      isWorking: true,
+      lastChecked: null,
+      errorDetails: ''
+    }, {
+      name: 'ESPN 2',
+      url: 'https://jf1.naqsheala.com:999/hls/espn22.m3u8?md5=MEuo2Q7X0CqVIw0EM7hexg&expires=1736889347',
+      type: 'hls',
+      isWorking: true,
+      lastChecked: null,
+      errorDetails: ''
+    }, {
+      name: 'ESPN 3',
+      url: 'https://d2hpc3rszq.fubohd.com/espn3/tracks-v1a1/mono.m3u8?token=1d4371cfdf60f9ab1aeb0338c76c456783ee18ae-80-1736918366-1736882366',
+      type: 'hls',
+      isWorking: true,
+      lastChecked: null,
+      errorDetails: ''
+    }, {
+      name: 'ESPN 4',
+      url: 'https://d2hpc3rszq.fubohd.com/espn4/tracks-v1a1/mono.m3u8?token=bc5365d1fed0db4ba30df966d459f01b9506e1c1-0b-1736918524-1736882524',
+      type: 'hls',
+      isWorking: true,
+      lastChecked: null,
+      errorDetails: ''
+    }, {
+      name: 'ESPN EXTRA',
+      url: 'https://z29vzc.fubohd.com/espn5/tracks-v1a1/mono.m3u8?token=1d4f70cde256a38835ab25ebd3e47b6911f7b337-87-1736918551-1736882551',
+      type: 'hls',
+      isWorking: true,
+      lastChecked: null,
+      errorDetails: ''
+    }, {
+      name: 'ESPN Premium',
+      url: 'https://vals88.pricesaskeloadsc.com/espn_premium/tracks-v1a1/mono.m3u8?token=99eeaf820239dd431679e36e68c887c8fac4bcec-f3-1736777230-1736741230',
+      type: 'hls',
+      isWorking: true,
+      lastChecked: null,
+      errorDetails: ''
+    }, {
+      name: 'Directv',
+      url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792',
+      type: 'hls',
+      isWorking: true,
+      lastChecked: null,
+      errorDetails: ''
+    }, {
+      name: 'Solo eventos',
+      url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792',
+      type: 'hls',
+      isWorking: true,
+      lastChecked: null,
+      errorDetails: ''
+    }];
+    let currentHls = null;
+    let currentFlv = null;
+    let streamStatuses = {};
+    let viewerCount = 0;
+    const TV_KEYS = {
+      UP: 38,
+      DOWN: 40,
+      OK: 13,
+      LEFT: 37, 
+      RIGHT: 39, 
+      OK_DOUBLE_PRESS_TIMEOUT: 300
+    };
+    const VIDEO_CONTROLS = {
+      PLAY_PAUSE: 0,
+      QUALITY: 1
+    };
+    let currentTVFocus = {
+      section: 'playlist',
+      index: 0
+    };
+    const STREAM_OPTIMIZATION_CONFIG = {
+      lowLatencyMode: true,
+      dynamicBufferAdjustment: true,
+      networkAdaptation: {
+        slowNetworkThreshold: 500,
+        fastNetworkThreshold: 100,
+        bufferSizeMultipliers: {
+          slow: 0.5,
+          normal: 1,
+          fast: 2
+        }
+      }
+    };
+    let isLoggedIn = false;
+    let isAdmin = false;
+    let editingStreamIndex = -1;
+    let lastOKPressTime = 0;
+    let isFullScreen = false;
+    let touchStartX = null;
+    async function urlVerificationBot() {
+      for (let i = 0; i < videoUrls.length; i++) {
+        const url = videoUrls[i].url;
+        try {
+          const response = await axios.head(url, {
+            timeout: 5000
+          });
+          if (response.status === 200) {
+            videoUrls[i].isWorking = true;
+            videoUrls[i].lastChecked = new Date().getTime();
+            videoUrls[i].errorDetails = '';
+          } else {
+            videoUrls[i].isWorking = false;
+            videoUrls[i].lastChecked = new Date().getTime();
+            videoUrls[i].errorDetails = `Error ${response.status}: ${response.statusText}`;
+          }
+        } catch (error) {
+          videoUrls[i].isWorking = false;
+          videoUrls[i].lastChecked = new Date().getTime();
+          videoUrls[i].errorDetails = error.message;
+        }
+      }
+      updateStreamStatus();
+    }
+    function checkStreamAvailability(url) {
+      return videoUrls.find(item => item.url === url).isWorking;
+    }
+    function getStreamMetadata(url) {
+      return videoUrls.find(item => item.url === url);
+    }
+    function logStreamDetails(streamInfo) {
+      console.log(`Stream: ${streamInfo.name}, URL: ${streamInfo.url}, Status: ${streamInfo.isWorking}, Last Checked: ${streamInfo.lastChecked}, Error Details: ${streamInfo.errorDetails}`);
+    }
+    function updateStreamStatus() {
+      const statusContainer = document.getElementById('botResults');
+      statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
+      
+      const statusContent = document.createElement('div');
+      videoUrls.forEach(item => {
+        const status = item.isWorking ? 'good' : 'error';
+        const statusItem = document.createElement('div');
+        statusItem.className = 'status-item';
+        
+        const indicator = document.createElement('div'); 
+        indicator.className = `status-indicator status-${status}`;
+        
+        const details = document.createElement('div');
+        details.className = 'status-details';
+        
+        const name = document.createElement('div');
+        name.className = 'status-name';
+        name.textContent = item.name;
+        
+        const message = document.createElement('div');
+        message.className = 'status-message';
+        message.textContent = item.errorDetails || 'Reproduccion estable';
+        
+        details.appendChild(name);
+        details.appendChild(message);
+        statusItem.appendChild(indicator);
+        statusItem.appendChild(details);
+        statusContent.appendChild(statusItem);
       });
 
-      document.addEventListener('keydown', function(e) {
-        if (
-          e.key === 'F12' || 
-          (e.ctrlKey && e.shiftKey && e.key === 'I') ||
-          (e.ctrlKey && e.key === 'U')
-        ) {
+      statusContainer.appendChild(statusContent);
+    }
+    async function detectNetworkSpeed() {
+      try {
+        const start = performance.now();
+        await fetch('https://www.example.com', {
+          method: 'HEAD',
+          mode: 'no-cors'
+        });
+        const end = performance.now();
+        const pingTime = end - start;
+        if (pingTime > STREAM_OPTIMIZATION_CONFIG.networkAdaptation.slowNetworkThreshold) {
+          return 'slow';
+        } else if (pingTime < STREAM_OPTIMIZATION_CONFIG.networkAdaptation.fastNetworkThreshold) {
+          return 'fast';
+        }
+        return 'normal';
+      } catch (error) {
+        return 'normal';
+      }
+    }
+    function trackNetworkPerformance(url, loadTime) {
+      const streamIndex = videoUrls.findIndex(item => item.url === url);
+      if (streamIndex !== -1) {
+        if (loadTime > 2000) {
+          streamStatuses[url] = {
+            status: 'slow',
+            message: 'Red lenta - Ajustando buffer'
+          };
+        } else {
+          streamStatuses[url] = {
+            status: 'good',
+            message: 'Reproduccion optimizada'
+          };
+        }
+        updateStreamStatus();
+      }
+    }
+    function playUrl(url, type) {
+      if (currentHls) {
+        currentHls.destroy();
+        currentHls = null;
+      }
+      if (currentFlv) {
+        currentFlv.destroy();
+        currentFlv = null;
+      }
+      const video = document.getElementById('video');
+      const qualitySelect = document.getElementById('quality');
+      qualitySelect.innerHTML = '<option value="">Calidad Auto</option>';
+      video.src = '';
+      if (type === 'hls' && Hls.isSupported()) {
+        detectNetworkSpeed().then(networkSpeed => {
+          const bufferMultiplier = STREAM_OPTIMIZATION_CONFIG.networkAdaptation.bufferSizeMultipliers[networkSpeed];
+          currentHls = new Hls({
+            maxBufferLength: 30 * bufferMultiplier,
+            maxBufferSize: 30 * 1000 * 1000 * bufferMultiplier,
+            fragLoadingMaxRetry: bufferMultiplier === 0.5 ? 1 : 2,
+            liveSyncDuration: 30 * bufferMultiplier,
+            liveMaxLatencyDuration: 45 * bufferMultiplier,
+            enableWorker: true,
+            backBufferLength: 10 * bufferMultiplier
+          });
+          video.addEventListener('pause', () => {
+            if (currentHls) {
+              currentHls.config.maxBufferLength = 60 * bufferMultiplier;
+            }
+          });
+          video.addEventListener('play', () => {
+            if (currentHls) {
+              currentHls.config.maxBufferLength = 30 * bufferMultiplier;
+            }
+          });
+          currentHls.config.enableMetadata = false;
+          currentHls.loadSource(url);
+          currentHls.attachMedia(video);
+          currentHls.on(Hls.Events.ERROR, function (event, data) {
+            const streamIndex = videoUrls.findIndex(item => item.url === url);
+            if (streamIndex !== -1) {
+              streamStatuses[url] = {
+                status: 'error',
+                message: `Error: ${data.type} - ${data.details}`
+              };
+              updateStreamStatus();
+            }
+          });
+          currentHls.on(Hls.Events.FRAG_LOADED, function (event, data) {
+            const loadTime = data.stats.loading.end - data.stats.loading.start;
+            trackNetworkPerformance(url, loadTime);
+            if (loadTime > 2000) {
+              streamStatuses[url] = {
+                status: 'slow',
+                message: 'Reproduccion lenta - Alta latencia'
+              };
+            } else {
+              streamStatuses[url] = {
+                status: 'good',
+                message: 'Reproduccion estable'
+              };
+            }
+            updateStreamStatus();
+          });
+          currentHls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+            const qualities = data.levels.map((level, index) => ({
+              index: index,
+              resolution: `${level.width}x${level.height}`,
+              bitrate: level.bitrate
+            }));
+            qualities.forEach(quality => {
+              const option = document.createElement('option');
+              option.value = quality.index;
+              option.text = `${quality.resolution} (${Math.round(quality.bitrate / 1000)} kbps)`;
+              qualitySelect.appendChild(option);
+            });
+            currentHls.currentLevel = Math.min(1, currentHls.levels.length - 1);
+            video.play();
+          });
+        });
+      } else if (type === 'flv' && flvjs.isSupported()) {
+        currentFlv = flvjs.createPlayer({
+          type: 'flv',
+          url: url
+        });
+        currentFlv.attachMediaElement(video);
+        currentFlv.load();
+        currentFlv.on(flvjs.Events.ERROR, function (errorType, errorDetail) {
+          console.error('FLV Error:', errorType, errorDetail);
+        });
+      } else {
+        video.src = url;
+      }
+      video.play();
+      const streamNameDisplay = document.createElement('div');
+      streamNameDisplay.className = 'current-stream-name';
+      streamNameDisplay.textContent = videoUrls.find(v => v.url === url).name;
+      document.getElementById('videoContainer').appendChild(streamNameDisplay);
+      setTimeout(() => {
+        streamNameDisplay.style.opacity = '0';
+        setTimeout(() => {
+          streamNameDisplay.remove();
+        }, 500);
+      }, 2000);
+    }
+    function updatePlaylist() {
+      const container = document.getElementById('playlistItems');
+      container.innerHTML = '';
+      videoUrls.forEach((item, index) => {
+        const playlistItem = document.createElement('div');
+        playlistItem.className = 'playlist-item';
+        playlistItem.onclick = () => {
+          playUrl(item.url, item.type);
+        };
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'playlist-name';
+        nameSpan.textContent = item.name;
+        
+        playlistItem.appendChild(nameSpan);
+        container.appendChild(playlistItem);
+      });
+      updateStreamStatus();
+    }
+    function initializeVideo() {
+      const video = document.getElementById('video');
+      const qualitySelect = document.getElementById('quality');
+      playUrl(videoUrls[0].url, videoUrls[0].type);
+      qualitySelect.addEventListener('change', function () {
+        if (currentHls) {
+          if (this.value === '') {
+            currentHls.currentLevel = -1;
+          } else {
+            const selectedLevel = Number(this.value);
+            currentHls.currentLevel = selectedLevel;
+          }
+        }
+      });
+    }
+    function initializeVideoPage() {
+      document.body.onmousedown = function (e) {
+        if (e.button === 0) {
           e.preventDefault();
           return false;
         }
-      });
-
-      function checkDevTools() {
-        const threshold = 200;
-        const start = performance.now();
-        console.log('');
-        const end = performance.now();
-        
-        if (end - start > threshold) {
-          window.location.reload();
-        }
+      };
+      document.getElementById('videoContainer').style.display = 'block';
+      document.getElementById('playlistContainer').style.display = 'block';
+      initializeVideo();
+      updatePlaylist();
+      viewerCount++;
+      updateViewerCount();
+      document.addEventListener('keydown', handleTVNavigation);
+      document.querySelector('.main-content').style.display = 'block';
+      urlVerificationBot();
+      setInterval(urlVerificationBot, 900000);
+      
+      const playlistContainer = document.getElementById('playlistContainer');
+      playlistContainer.addEventListener('touchstart', handleTouchStart, false);
+      playlistContainer.addEventListener('touchmove', handleTouchMove, {passive: false});
+      playlistContainer.addEventListener('touchend', handleTouchEnd, false);
+    }
+    function checkReferrer() {
+      return isLoggedIn;
+    }
+    function getCurrentUser() {
+      return 'default';
+    }
+    function updateViewerCount() {
+      let viewerCountContainer = document.getElementById('viewerCountContainer');
+      if (!viewerCountContainer) {
+        viewerCountContainer = document.createElement('div');
+        viewerCountContainer.id = 'viewerCountContainer';
+        viewerCountContainer.className = 'viewer-count';
+        document.querySelector('.main-content').appendChild(viewerCountContainer);
+      }
+      viewerCountContainer.textContent = `Personas viendo: ${viewerCount}`;
+    }
+    function handleTVNavigation(event) {
+      // Prevent default scroll behavior for arrow keys
+      if ([TV_KEYS.UP, TV_KEYS.DOWN, TV_KEYS.LEFT, TV_KEYS.RIGHT].includes(event.keyCode)) {
+        event.preventDefault();
       }
 
-      setInterval(checkDevTools, 1000);
-
-      ['log', 'warn', 'error', 'info', 'debug'].forEach(method => {
-        const originalMethod = console[method];
-        console[method] = function() {
-        };
-      });
-
-      Object.defineProperty(document, 'documentElement', {
-        get: function() {
-          return null;
+      document.body.onmousedown = function (e) {
+        if (e.button === 0) {
+          e.preventDefault(); 
+          return false;
         }
-      });
-
-      const originalCreateElement = document.createElement;
-      document.createElement = function(tagName) {
-        if (tagName.toLowerCase() === 'script') {
-          return null;
-        }
-        return originalCreateElement.call(document, tagName);
       };
 
-      window.checkPassword = function(a,b){
-        return (function(x,y){
-          return x === '12' && y === 'user' || x === '2003' && y === 'admin';
-        })(a,b);
-      };
+      const playlistItems = document.querySelectorAll('.playlist-item');
+      const videoPlayer = document.getElementById('video');
+      const controls = document.querySelectorAll('.controls select');
+      const fullscreenButton = document.getElementById('fullscreenButton');
+      const playlistContainer = document.getElementById('playlistContainer');
+      const navigationSections = ['playlist', 'videoPlayer', 'controls', 'fullscreenButton'];
 
-      let loginAttempts = 0;
-      let lastFailedLoginTime = null;
-      const LOGIN_COOLDOWN_SECONDS = 30;
-      let videoUrls = [{
-        name: 'Canal Caracol',
-        url: 'https://stream.gia.tv/giatv/giatv-Gary2CanalGary2Canal/Gary2CanalGary2Canal/chunks.m3u8',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'Simpson 24/7',
-        url: 'https://stream-cdn-iad2.vaughnsoft.net/play/live_simpson_maniahd193.flv',
-        type: 'flv',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'Win+',
-        url: 'https://14c5.pricesaskeloadsc.com/winplusonline1/tracks-v1a1/mono.m3u8?token=225a018d037f25863cdf896a06973b354d0bf35d-b2-1736775912-1736739912',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'ESPN',
-        url: 'https://cdn8.vivozytv.com/espn/tracks-v1a1/mono.m3u8?remote=200.41.113.8&token=2dfa6160c828b53a7004c09b521df529a4cf92d8-13d47d7994c2eb748e207de723c44521-1736805912-1736795112',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'ESPN 2',
-        url: 'https://jf1.naqsheala.com:999/hls/espn22.m3u8?md5=MEuo2Q7X0CqVIw0EM7hexg&expires=1736889347',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'ESPN 3',
-        url: 'https://d2hpc3rszq.fubohd.com/espn3/tracks-v1a1/mono.m3u8?token=1d4371cfdf60f9ab1aeb0338c76c456783ee18ae-80-1736918366-1736882366',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'ESPN 4',
-        url: 'https://d2hpc3rszq.fubohd.com/espn4/tracks-v1a1/mono.m3u8?token=bc5365d1fed0db4ba30df966d459f01b9506e1c1-0b-1736918524-1736882524',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'ESPN EXTRA',
-        url: 'https://z29vzc.fubohd.com/espn5/tracks-v1a1/mono.m3u8?token=1d4f70cde256a38835ab25ebd3e47b6911f7b337-87-1736918551-1736882551',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'ESPN Premium',
-        url: 'https://vals88.pricesaskeloadsc.com/espn_premium/tracks-v1a1/mono.m3u8?token=99eeaf820239dd431679e36e68c887c8fac4bcec-f3-1736777230-1736741230',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'Directv',
-        url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'Solo eventos',
-        url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }];
-      let currentHls = null;
-      let currentFlv = null;
-      let streamStatuses = {};
-      let viewerCount = 0;
-      const TV_KEYS = {
-        UP: 38,
-        DOWN: 40,
-        OK: 13,
-        OK_DOUBLE_PRESS_TIMEOUT: 300
-      };
-      const VIDEO_CONTROLS = {
-        PLAY_PAUSE: 0,
-        QUALITY: 1
-      };
-      let currentTVFocus = {
-        section: 'playlist',
-        index: 0
-      };
-      const STREAM_OPTIMIZATION_CONFIG = {
-        lowLatencyMode: true,
-        dynamicBufferAdjustment: true,
-        networkAdaptation: {
-          slowNetworkThreshold: 500,
-          fastNetworkThreshold: 100,
-          bufferSizeMultipliers: {
-            slow: 0.5,
-            normal: 1,
-            fast: 2
-          }
-        }
-      };
-      let isLoggedIn = false;
-      let isAdmin = false;
-      let editingStreamIndex = -1;
-      let lastOKPressTime = 0;
-      let isFullScreen = false;
-      let touchStartX = null;
-      let playlistVisible = true;
-      async function urlVerificationBot() {
-        for (let i = 0; i < videoUrls.length; i++) {
-          const url = videoUrls[i].url;
-          try {
-            const response = await axios.head(url, {
-              timeout: 5000
-            });
-            if (response.status === 200) {
-              videoUrls[i].isWorking = true;
-              videoUrls[i].lastChecked = new Date().getTime();
-              videoUrls[i].errorDetails = '';
-            } else {
-              videoUrls[i].isWorking = false;
-              videoUrls[i].lastChecked = new Date().getTime();
-              videoUrls[i].errorDetails = `Error ${response.status}: ${response.statusText}`;
-            }
-          } catch (error) {
-            videoUrls[i].isWorking = false;
-            videoUrls[i].lastChecked = new Date().getTime();
-            videoUrls[i].errorDetails = error.message;
-          }
-        }
-        updateStreamStatus();
-      }
-      function checkStreamAvailability(url) {
-        return videoUrls.find(item => item.url === url).isWorking;
-      }
-      function getStreamMetadata(url) {
-        return videoUrls.find(item => item.url === url);
-      }
-      function logStreamDetails(streamInfo) {
-        console.log(`Stream: ${streamInfo.name}, URL: ${streamInfo.url}, Status: ${streamInfo.isWorking}, Last Checked: ${streamInfo.lastChecked}, Error Details: ${streamInfo.errorDetails}`);
-      }
-      function updateStreamStatus() {
-        const statusContainer = document.getElementById('botResults');
-        statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
-        
-        const statusContent = document.createElement('div');
-        videoUrls.forEach(item => {
-          const status = item.isWorking ? 'good' : 'error';
-          const statusItem = document.createElement('div');
-          statusItem.className = 'status-item';
-          
-          const indicator = document.createElement('div'); 
-          indicator.className = `status-indicator status-${status}`;
-          
-          const details = document.createElement('div');
-          details.className = 'status-details';
-          
-          const name = document.createElement('div');
-          name.className = 'status-name';
-          name.textContent = item.name;
-          
-          const message = document.createElement('div');
-          message.className = 'status-message';
-          message.textContent = item.errorDetails || 'Reproduccion estable';
-          
-          details.appendChild(name);
-          details.appendChild(message);
-          statusItem.appendChild(indicator);
-          statusItem.appendChild(details);
-          statusContent.appendChild(statusItem);
-        });
-
-        statusContainer.appendChild(statusContent);
-      }
-      async function detectNetworkSpeed() {
-        try {
-          const start = performance.now();
-          await fetch('https://www.example.com', {
-            method: 'HEAD',
-            mode: 'no-cors'
-          });
-          const end = performance.now();
-          const pingTime = end - start;
-          if (pingTime > STREAM_OPTIMIZATION_CONFIG.networkAdaptation.slowNetworkThreshold) {
-            return 'slow';
-          } else if (pingTime < STREAM_OPTIMIZATION_CONFIG.networkAdaptation.fastNetworkThreshold) {
-            return 'fast';
-          }
-          return 'normal';
-        } catch (error) {
-          return 'normal';
-        }
-      }
-      function trackNetworkPerformance(url, loadTime) {
-        const streamIndex = videoUrls.findIndex(item => item.url === url);
-        if (streamIndex !== -1) {
-          if (loadTime > 2000) {
-            streamStatuses[url] = {
-              status: 'slow',
-              message: 'Red lenta - Ajustando buffer'
-            };
-          } else {
-            streamStatuses[url] = {
-              status: 'good',
-              message: 'Reproduccion optimizada'
-            };
-          }
-          updateStreamStatus();
-        }
-      }
-      function playUrl(url, type) {
-        const playlistContainer = document.getElementById('playlistContainer');
-        playlistContainer.classList.add('hidden');
-        
-        if (currentHls) {
-          currentHls.destroy();
-          currentHls = null;
-        }
-        if (currentFlv) {
-          currentFlv.destroy();
-          currentFlv = null;
-        }
-        const video = document.getElementById('video');
-        const qualitySelect = document.getElementById('quality');
-        qualitySelect.innerHTML = '<option value="">Calidad Auto</option>';
-        video.src = '';
-        if (type === 'hls' && Hls.isSupported()) {
-          detectNetworkSpeed().then(networkSpeed => {
-            const bufferMultiplier = STREAM_OPTIMIZATION_CONFIG.networkAdaptation.bufferSizeMultipliers[networkSpeed];
-            currentHls = new Hls({
-              maxBufferLength: 30 * bufferMultiplier,
-              maxBufferSize: 30 * 1000 * 1000 * bufferMultiplier,
-              fragLoadingMaxRetry: bufferMultiplier === 0.5 ? 1 : 2,
-              liveSyncDuration: 30 * bufferMultiplier,
-              liveMaxLatencyDuration: 45 * bufferMultiplier,
-              enableWorker: true,
-              backBufferLength: 10 * bufferMultiplier
-            });
-            video.addEventListener('pause', () => {
-              if (currentHls) {
-                currentHls.config.maxBufferLength = 60 * bufferMultiplier;
-              }
-            });
-            video.addEventListener('play', () => {
-              if (currentHls) {
-                currentHls.config.maxBufferLength = 30 * bufferMultiplier;
-              }
-            });
-            currentHls.config.enableMetadata = false;
-            currentHls.loadSource(url);
-            currentHls.attachMedia(video);
-            currentHls.on(Hls.Events.ERROR, function (event, data) {
-              const streamIndex = videoUrls.findIndex(item => item.url === url);
-              if (streamIndex !== -1) {
-                streamStatuses[url] = {
-                  status: 'error',
-                  message: `Error: ${data.type} - ${data.details}`
-                };
-                updateStreamStatus();
-              }
-            });
-            currentHls.on(Hls.Events.FRAG_LOADED, function (event, data) {
-              const loadTime = data.stats.loading.end - data.stats.loading.start;
-              trackNetworkPerformance(url, loadTime);
-              if (loadTime > 2000) {
-                streamStatuses[url] = {
-                  status: 'slow',
-                  message: 'Reproduccion lenta - Alta latencia'
-                };
-              } else {
-                streamStatuses[url] = {
-                  status: 'good',
-                  message: 'Reproduccion estable'
-                };
-              }
-              updateStreamStatus();
-            });
-            currentHls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
-              const qualities = data.levels.map((level, index) => ({
-                index: index,
-                resolution: `${level.width}x${level.height}`,
-                bitrate: level.bitrate
-              }));
-              qualities.forEach(quality => {
-                const option = document.createElement('option');
-                option.value = quality.index;
-                option.text = `${quality.resolution} (${Math.round(quality.bitrate / 1000)} kbps)`;
-                qualitySelect.appendChild(option);
-              });
-              currentHls.currentLevel = Math.min(1, currentHls.levels.length - 1);
-              video.play();
-            });
-          });
-        } else if (type === 'flv' && flvjs.isSupported()) {
-          currentFlv = flvjs.createPlayer({
-            type: 'flv',
-            url: url
-          });
-          currentFlv.attachMediaElement(video);
-          currentFlv.load();
-          currentFlv.on(flvjs.Events.ERROR, function (errorType, errorDetail) {
-            console.error('FLV Error:', errorType, errorDetail);
-          });
-        } else {
-          video.src = url;
-        }
-        video.play();
-        const streamNameDisplay = document.createElement('div');
-        streamNameDisplay.className = 'current-stream-name';
-        streamNameDisplay.textContent = videoUrls.find(v => v.url === url).name;
-        document.getElementById('videoContainer').appendChild(streamNameDisplay);
-        setTimeout(() => {
-          streamNameDisplay.style.opacity = '0';
-          setTimeout(() => {
-            streamNameDisplay.remove();
-          }, 500);
-        }, 2000);
-        
-        setTimeout(() => {
+      switch (event.keyCode) {
+        case TV_KEYS.UP:
+          navigateUp(playlistItems, videoPlayer, controls, fullscreenButton);
+          break;
+        case TV_KEYS.DOWN: 
+          navigateDown(playlistItems, videoPlayer, controls, fullscreenButton);
+          break;
+        case TV_KEYS.OK:
+          selectCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
+          break;
+        case TV_KEYS.LEFT:
+          // Show playlist when left button pressed
           playlistContainer.classList.remove('hidden');
-        }, 2000);
+          currentTVFocus.section = 'playlist';
+          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
+          break;
+        case TV_KEYS.RIGHT:
+          // Hide playlist when right button pressed  
+          playlistContainer.classList.add('hidden');
+          currentTVFocus.section = 'videoPlayer';
+          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
+          break;
       }
-      function updatePlaylist() {
-        const container = document.getElementById('playlistItems');
-        container.innerHTML = '';
-        videoUrls.forEach((item, index) => {
-          const playlistItem = document.createElement('div');
-          playlistItem.className = 'playlist-item';
-          playlistItem.onclick = () => {
-            playUrl(item.url, item.type);
-          };
-          
-          const nameSpan = document.createElement('span');
-          nameSpan.className = 'playlist-name';
-          nameSpan.textContent = item.name;
-          
-          playlistItem.appendChild(nameSpan);
-          container.appendChild(playlistItem);
-        });
-        updateStreamStatus();
-      }
-      function initializeVideo() {
-        const video = document.getElementById('video');
-        const qualitySelect = document.getElementById('quality');
-        playUrl(videoUrls[0].url, videoUrls[0].type);
-        qualitySelect.addEventListener('change', function () {
-          if (currentHls) {
-            if (this.value === '') {
-              currentHls.currentLevel = -1;
-            } else {
-              const selectedLevel = Number(this.value);
-              currentHls.currentLevel = selectedLevel;
-            }
-          }
-        });
-      }
-      function initializeVideoPage() {
-        document.body.onmousedown = function (e) {
-          if (e.button === 0) {
-            e.preventDefault();
-            return false;
-          }
-        };
-        document.getElementById('videoContainer').style.display = 'block';
-        document.getElementById('playlistContainer').style.display = 'block';
-        initializeVideo();
-        updatePlaylist();
-        viewerCount++;
-        updateViewerCount();
-        document.addEventListener('keydown', handleTVNavigation);
-        document.querySelector('.main-content').style.display = 'block';
-        urlVerificationBot();
-        setInterval(urlVerificationBot, 900000);
-        
-        const playlistContainer = document.getElementById('playlistContainer');
-        playlistContainer.addEventListener('touchstart', handleTouchStart, false);
-        playlistContainer.addEventListener('touchmove', handleTouchMove, {passive: false});
-        playlistContainer.addEventListener('touchend', handleTouchEnd, false);
-      }
-      function checkReferrer() {
-        return isLoggedIn;
-      }
-      function getCurrentUser() {
-        return 'default';
-      }
-      function updateViewerCount() {
-        let viewerCountContainer = document.getElementById('viewerCountContainer');
-        if (!viewerCountContainer) {
-          viewerCountContainer = document.createElement('div');
-          viewerCountContainer.id = 'viewerCountContainer';
-          viewerCountContainer.className = 'viewer-count';
-          document.querySelector('.main-content').appendChild(viewerCountContainer);
-        }
-        viewerCountContainer.textContent = `Personas viendo: ${viewerCount}`;
-      }
-      function handleTVNavigation(event) {
-        if (event.keyCode === TV_KEYS.UP || event.keyCode === TV_KEYS.DOWN) {
-          event.preventDefault();
-        }
+    }
+    function navigateUp(playlistItems, videoPlayer, controls, fullscreenButton) {
+      // Prevent page scroll
+      window.scrollTo(window.scrollX, window.scrollY);
 
-        document.body.onmousedown = function (e) {
-          if (e.button === 0) {
-            e.preventDefault(); 
-            return false;
-          }
-        };
-
-        const playlistItems = document.querySelectorAll('.playlist-item');
-        const videoPlayer = document.getElementById('video');
-        const controls = document.querySelectorAll('.controls select');
-        const fullscreenButton = document.getElementById('fullscreenButton');
-        const navigationSections = ['playlist', 'videoPlayer', 'controls', 'fullscreenButton'];
-
-        switch (event.keyCode) {
-          case TV_KEYS.UP:
-            navigateUp(playlistItems, videoPlayer, controls, fullscreenButton);
-            break;
-          case TV_KEYS.DOWN: 
-            navigateDown(playlistItems, videoPlayer, controls, fullscreenButton);
-            break;
-          case TV_KEYS.OK:
-            selectCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-            break;
-          case 37: // Left arrow
-            navigateLeft();
-            break;
-          case 39: // Right arrow
-            navigateRight();
-            break;
-        }
-      }
-      function navigateUp(playlistItems, videoPlayer, controls, fullscreenButton) {
-        window.scrollTo(window.scrollX, window.scrollY);
-
-        if (currentTVFocus.section === 'playlist' && currentTVFocus.index > 0) {
+      if (currentTVFocus.section === 'playlist' && currentTVFocus.index > 0) {
+        currentTVFocus.index--;
+        highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
+      } else if (currentTVFocus.section === 'videoPlayer') {
+        currentTVFocus.section = 'playlist';
+        currentTVFocus.index = playlistItems.length - 1;
+        highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
+      } else if (currentTVFocus.section === 'controls') {
+        if (currentTVFocus.index > 0) {
           currentTVFocus.index--;
           highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        } else if (currentTVFocus.section === 'videoPlayer') {
-          currentTVFocus.section = 'playlist';
-          currentTVFocus.index = playlistItems.length - 1;
-          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        } else if (currentTVFocus.section === 'controls') {
-          if (currentTVFocus.index > 0) {
-            currentTVFocus.index--;
-            highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-          } else {
-            currentTVFocus.section = 'videoPlayer';
-            currentTVFocus.index = 0;
-            highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-          }
-        } else if (currentTVFocus.section === 'fullscreenButton') {
-          currentTVFocus.section = 'controls';
-          currentTVFocus.index = controls.length - 1;
-          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        }
-      }
-      function navigateDown(playlistItems, videoPlayer, controls, fullscreenButton) {
-        window.scrollTo(window.scrollX, window.scrollY);
-
-        if (currentTVFocus.section === 'playlist' && currentTVFocus.index < playlistItems.length - 1) {
-          currentTVFocus.index++;
-          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        } else if (currentTVFocus.section === 'playlist' && currentTVFocus.index === playlistItems.length - 1) {
+        } else {
           currentTVFocus.section = 'videoPlayer';
           currentTVFocus.index = 0;
           highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        } else if (currentTVFocus.section === 'videoPlayer') {
-          currentTVFocus.section = 'controls';
-          currentTVFocus.index = 0;
-          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        } else if (currentTVFocus.section === 'controls' && currentTVFocus.index < controls.length - 1) {
-          currentTVFocus.index++;
-          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        } else if (currentTVFocus.section === 'controls' && currentTVFocus.index === controls.length - 1) {
-          currentTVFocus.section = 'fullscreenButton';
-          currentTVFocus.index = 0;
-          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
         }
+      } else if (currentTVFocus.section === 'fullscreenButton') {
+        currentTVFocus.section = 'controls';
+        currentTVFocus.index = controls.length - 1;
+        highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
       }
-      function selectCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton) {
-        const now = Date.now();
-        const timeSinceLastPress = now - lastOKPressTime;
-        if (currentTVFocus.section === 'playlist' && playlistItems[currentTVFocus.index]) {
-          const playlistContainer = document.getElementById('playlistContainer');
-          playlistContainer.classList.add('hidden');
-          
-          const selectedItem = videoUrls[currentTVFocus.index];
-          playUrl(selectedItem.url, selectedItem.type);
-          
-          setTimeout(() => {
-            playlistContainer.classList.remove('hidden');
-          }, 2000);
-        } else if (currentTVFocus.section === 'controls' && controls[currentTVFocus.index]) {
-          controls[currentTVFocus.index].click();
-        } else if (currentTVFocus.section === 'fullscreenButton') {
-          fullscreenButton.click();
-        }
-      }
-      function highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton) {
-        playlistItems.forEach(item => item.classList.remove('tv-focus'));
-        videoPlayer.classList.remove('tv-focus');
-        controls.forEach(control => control.classList.remove('tv-focus'));
-        fullscreenButton.classList.remove('tv-focus');
-        if (currentTVFocus.section === 'playlist' && playlistItems[currentTVFocus.index]) {
-          playlistItems[currentTVFocus.index].classList.add('tv-focus');
-        } else if (currentTVFocus.section === 'videoPlayer') {
-          videoPlayer.classList.add('tv-focus');
-        } else if (currentTVFocus.section === 'controls' && controls[currentTVFocus.index]) {
-          controls[currentTVFocus.index].classList.add('tv-focus');
-        } else if (currentTVFocus.section === 'fullscreenButton') {
-          fullscreenButton.classList.add('tv-focus');
-        }
-      }
-      function navigateLeft() {
-        const playlistContainer = document.getElementById('playlistContainer');
-        if (!playlistVisible) {
-          playlistContainer.classList.remove('hidden');
-          playlistVisible = true;
-        }
-      }
+    }
+    function navigateDown(playlistItems, videoPlayer, controls, fullscreenButton) {
+      // Prevent page scroll
+      window.scrollTo(window.scrollX, window.scrollY);
 
-      function navigateRight() {
-        const playlistContainer = document.getElementById('playlistContainer');
-        if (playlistVisible) {
-          playlistContainer.classList.add('hidden');
-          playlistVisible = false;
-        }
+      if (currentTVFocus.section === 'playlist' && currentTVFocus.index < playlistItems.length - 1) {
+        currentTVFocus.index++;
+        highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
+      } else if (currentTVFocus.section === 'playlist' && currentTVFocus.index === playlistItems.length - 1) {
+        currentTVFocus.section = 'videoPlayer';
+        currentTVFocus.index = 0;
+        highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
+      } else if (currentTVFocus.section === 'videoPlayer') {
+        currentTVFocus.section = 'controls';
+        currentTVFocus.index = 0;
+        highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
+      } else if (currentTVFocus.section === 'controls' && currentTVFocus.index < controls.length - 1) {
+        currentTVFocus.index++;
+        highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
+      } else if (currentTVFocus.section === 'controls' && currentTVFocus.index === controls.length - 1) {
+        currentTVFocus.section = 'fullscreenButton';
+        currentTVFocus.index = 0;
+        highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
       }
-      function checkPassword() {
-        const loginType = document.getElementById('loginType').value;
-        const passwordInput = document.getElementById('passwordInput');
-        const password = passwordInput.value.trim();
-        passwordInput.value = '';
+    }
+    function selectCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton) {
+      const now = Date.now();
+      const timeSinceLastPress = now - lastOKPressTime;
+      if (currentTVFocus.section === 'playlist' && playlistItems[currentTVFocus.index]) {
+        const selectedItem = videoUrls[currentTVFocus.index];
+        playUrl(selectedItem.url, selectedItem.type);
+      } else if (currentTVFocus.section === 'controls' && controls[currentTVFocus.index]) {
+        controls[currentTVFocus.index].click();
+      } else if (currentTVFocus.section === 'fullscreenButton') {
+        fullscreenButton.click();
+      }
+    }
+    function highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton) {
+      playlistItems.forEach(item => item.classList.remove('tv-focus'));
+      videoPlayer.classList.remove('tv-focus');
+      controls.forEach(control => control.classList.remove('tv-focus'));
+      fullscreenButton.classList.remove('tv-focus');
+      if (currentTVFocus.section === 'playlist' && playlistItems[currentTVFocus.index]) {
+        playlistItems[currentTVFocus.index].classList.add('tv-focus');
+      } else if (currentTVFocus.section === 'videoPlayer') {
+        videoPlayer.classList.add('tv-focus');
+      } else if (currentTVFocus.section === 'controls' && controls[currentTVFocus.index]) {
+        controls[currentTVFocus.index].classList.add('tv-focus');
+      } else if (currentTVFocus.section === 'fullscreenButton') {
+        fullscreenButton.classList.add('tv-focus');
+      }
+    }
+    function checkPassword() {
+      const loginType = document.getElementById('loginType').value;
+      const passwordInput = document.getElementById('passwordInput');
+      const password = passwordInput.value.trim();
+      passwordInput.value = '';
 
-        if ((loginType === 'user' && (password === '12' || password === '12 ' || password === ' 12')) ||
-            (loginType === 'admin' && password === '2003')) {
+      // Sanitize and normalize password input
+      const sanitizedPassword = password.replace(/\s+/g, ' ').trim();
+
+      // Check password with multiple variations
+      const validUserPasswords = ['12', '12 ', ' 12', ' 12 '];
+      const isValidUserPassword = validUserPasswords.includes(sanitizedPassword);
+      const isValidAdminPassword = sanitizedPassword === '2003';
+
+      if ((loginType === 'user' && isValidUserPassword) ||
+          (loginType === 'admin' && isValidAdminPassword)) {
+        
+        try {
           isLoggedIn = true;
           isAdmin = loginType === 'admin';
           loginAttempts = 0;
           lastFailedLoginTime = null;
 
-          document.getElementById('loginContainer').classList.toggle('hidden', true);
-          document.querySelector('.main-content').classList.toggle('visible', true);
-          document.getElementById('adminControls').classList.toggle('hidden', !isAdmin);
+          // Show/hide elements
+          const elements = {
+            'loginContainer': false,
+            'main-content': true,
+            'adminControls': isAdmin,
+            'videoContainer': true,
+            'playlistContainer': true
+          };
 
-          const videoContainer = document.getElementById('videoContainer');
-          videoContainer.style.display = 'block';
-          videoContainer.classList.remove('hidden');
+          Object.entries(elements).forEach(([id, show]) => {
+            const element = document.getElementById(id) || document.querySelector(`.${id}`);
+            if (element) {
+              if (show) {
+                element.classList.remove('hidden');
+                element.classList.add('visible');
+                element.style.display = 'block';
+              } else {
+                element.classList.add('hidden');
+                element.classList.remove('visible');
+              }
+            }
+          });
 
-          const playlistContainer = document.getElementById('playlistContainer');
-          playlistContainer.style.display = 'block';
-          playlistContainer.classList.remove('hidden');
-
+          // Initialize components
           loadStreams();
           initializeVideoPage();
           if (isAdmin) {
             updateAdminStreamsList();
           }
-        } else {
-          loginAttempts++;
-          lastFailedLoginTime = Date.now();
-          window.alert('Contraseña incorrecta');
+
+        } catch (error) {
+          console.error('Login initialization error:', error);
+          alert('Error al iniciar sesión. Por favor intente nuevamente.');
         }
+
+      } else {
+        loginAttempts++;
+        lastFailedLoginTime = Date.now();
+        
+        const passwordError = document.getElementById('passwordError');
+        passwordError.style.display = 'block';
+        setTimeout(() => {
+          passwordError.style.display = 'none';
+        }, 3000);
       }
-      function handleFullScreenChange() {
-        isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+    }
+    function handleFullScreenChange() {
+      isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+    }
+    document.addEventListener('fullscreenchange', handleFullScreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullScreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullScreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullScreenChange);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'F12' || e.ctrlKey && e.shiftKey && e.key === 'I') {
+        e.preventDefault();
+        return false;
       }
-      document.addEventListener('fullscreenchange', handleFullScreenChange);
-      document.addEventListener('webkitfullscreenchange', handleFullScreenChange);
-      document.addEventListener('mozfullscreenchange', handleFullScreenChange);
-      document.addEventListener('MSFullscreenChange', handleFullScreenChange);
-      document.addEventListener('keydown', function (e) {
-        if (e.key === 'F12' || e.ctrlKey && e.shiftKey && e.key === 'I') {
+    });
+    document.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+      return false;
+    });
+    document.getElementById('passwordInput').addEventListener('copy', function (e) {
+      e.preventDefault();
+      return false;
+    });
+    document.getElementById('passwordInput').addEventListener('cut', function (e) {
+      e.preventDefault();
+      return false;
+    });
+    document.getElementById('passwordInput').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        checkPassword();
+      }
+    });
+    document.addEventListener('keydown', handleTVNavigation);
+    document.addEventListener('DOMContentLoaded', () => {
+      const fullscreenButton = document.getElementById('fullscreenButton');
+      const video = document.getElementById('video');
+      fullscreenButton.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          if (video.requestFullscreen) {
+            video.requestFullscreen();
+          } else if (video.mozRequestFullScreen) {
+            video.mozRequestFullScreen();
+          } else if (video.webkitRequestFullscreen) {
+            video.webkitRequestFullscreen();
+          } else if (video.msRequestFullscreen) {
+            video.msRequestFullscreen();
+          }
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+          }
+        }
+      });
+      const playlistContainer = document.getElementById('playlistContainer');
+      playlistContainer.addEventListener('touchstart', handleTouchStart, false);
+      playlistContainer.addEventListener('touchmove', handleTouchMove, {passive: false});
+      playlistContainer.addEventListener('touchend', handleTouchEnd, false);
+    })
+    window.addEventListener('error', function(e) {
+      console.error('Login Error:', e.message);
+    });
+    document.addEventListener('touchmove', function(e) {
+      if (e.scale !== 1) { 
+        e.preventDefault(); 
+      }
+    }, { passive: false });
+    document.addEventListener('DOMContentLoaded', () => {
+      const passwordInput = document.getElementById('passwordInput');
+      
+      ['cut', 'copy', 'paste'].forEach(event => {
+        passwordInput.addEventListener(event, function(e) {
           e.preventDefault();
           return false;
-        }
+        });
       });
-      document.addEventListener('contextmenu', function (e) {
-        e.preventDefault();
-        return false;
-      });
-      document.getElementById('passwordInput').addEventListener('copy', function (e) {
-        e.preventDefault();
-        return false;
-      });
-      document.getElementById('passwordInput').addEventListener('cut', function (e) {
-        e.preventDefault();
-        return false;
-      });
-      document.getElementById('passwordInput').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
+      
+      passwordInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
           e.preventDefault();
           checkPassword();
         }
       });
-      document.addEventListener('keydown', handleTVNavigation);
-      document.addEventListener('DOMContentLoaded', () => {
-        const fullscreenButton = document.getElementById('fullscreenButton');
-        const video = document.getElementById('video');
-        fullscreenButton.addEventListener('click', () => {
-          if (!document.fullscreenElement) {
-            if (video.requestFullscreen) {
-              video.requestFullscreen();
-            } else if (video.mozRequestFullScreen) {
-              video.mozRequestFullScreen();
-            } else if (video.webkitRequestFullscreen) {
-              video.webkitRequestFullscreen();
-            } else if (video.msRequestFullscreen) {
-              video.msRequestFullscreen();
-            }
-          } else {
-            if (document.exitFullscreen) {
-              document.exitFullscreen();
-            } else if (document.mozCancelFullScreen) {
-              document.mozCancelFullScreen();
-            } else if (document.webkitExitFullscreen) {
-              document.webkitExitFullscreen();
-            } else if (document.msExitFullscreen) {
-              document.msExitFullscreen();
-            }
-          }
-        });
-        const playlistContainer = document.getElementById('playlistContainer');
-        playlistContainer.addEventListener('touchstart', handleTouchStart, false);
-        playlistContainer.addEventListener('touchmove', handleTouchMove, {passive: false});
-        playlistContainer.addEventListener('touchend', handleTouchEnd, false);
-        document.body.addEventListener('touchstart', handleTouchStart, false);
-        document.body.addEventListener('touchmove', handleTouchMove, {passive: false}); 
-        document.body.addEventListener('touchend', handleTouchEnd, false);
-      });
-      window.addEventListener('error', function(e) {
-        console.error('Login Error:', e.message);
-      });
-      document.addEventListener('touchmove', function(e) {
-        if (e.scale !== 1) { 
-          e.preventDefault(); 
-        }
-      }, { passive: false });
-      document.addEventListener('DOMContentLoaded', () => {
-        const passwordInput = document.getElementById('passwordInput');
-        
-        ['cut', 'copy', 'paste'].forEach(event => {
-          passwordInput.addEventListener(event, function(e) {
-            e.preventDefault();
-            return false;
-          });
-        });
-        
-        passwordInput.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter' || e.keyCode === 13) {
-            e.preventDefault();
-            checkPassword();
-          }
-        });
-      });
-      function addStream() {
-        const name = document.getElementById('streamName').value;
-        const url = document.getElementById('streamUrl').value;
-        const type = document.getElementById('streamType').value;
-        
-        if (!name || !url) {
-          alert('Por favor complete todos los campos');
-          return;
-        }
+      const passwordError = document.getElementById('passwordError');
+      if (passwordError) {
+        passwordError.style.display = 'none';
+      }
+    });
+    function addStream() {
+      const name = document.getElementById('streamName').value;
+      const url = document.getElementById('streamUrl').value;
+      const type = document.getElementById('streamType').value;
+      
+      if (!name || !url) {
+        alert('Por favor complete todos los campos');
+        return;
+      }
 
-        if (editingStreamIndex >= 0) {
-          videoUrls[editingStreamIndex] = {
-            name,
-            url,
-            type,
-            isWorking: true,
-            lastChecked: null,
-            errorDetails: ''
-          };
-          editingStreamIndex = -1;
-        } else {
-          videoUrls.push({
-            name,
-            url,
-            type,
-            isWorking: true,
-            lastChecked: null,
-            errorDetails: ''
-          });
-        }
+      if (editingStreamIndex >= 0) {
+        videoUrls[editingStreamIndex] = {
+          name,
+          url,
+          type,
+          isWorking: true,
+          lastChecked: null,
+          errorDetails: ''
+        };
+        editingStreamIndex = -1;
+      } else {
+        videoUrls.push({
+          name,
+          url,
+          type,
+          isWorking: true,
+          lastChecked: null,
+          errorDetails: ''
+        });
+      }
 
-        document.getElementById('streamName').value = '';
-        document.getElementById('streamUrl').value = '';
-        document.getElementById('streamType').value = 'hls';
-        
+      document.getElementById('streamName').value = '';
+      document.getElementById('streamUrl').value = '';
+      document.getElementById('streamType').value = 'hls';
+      
+      updateAdminStreamsList();
+      updatePlaylist();
+      saveStreams();
+    }
+
+    function editStream(index) {
+      const stream = videoUrls[index];
+      document.getElementById('streamName').value = stream.name;
+      document.getElementById('streamUrl').value = stream.url;
+      document.getElementById('streamType').value = stream.type;
+      editingStreamIndex = index;
+    }
+
+    function deleteStream(index) {
+      if (confirm('¿Está seguro de eliminar este stream?')) {
+        videoUrls.splice(index, 1);
         updateAdminStreamsList();
         updatePlaylist();
         saveStreams();
       }
+    }
 
-      function editStream(index) {
-        const stream = videoUrls[index];
-        document.getElementById('streamName').value = stream.name;
-        document.getElementById('streamUrl').value = stream.url;
-        document.getElementById('streamType').value = stream.type;
-        editingStreamIndex = index;
-      }
-
-      function deleteStream(index) {
-        if (confirm('¿Está seguro de eliminar este stream?')) {
-          videoUrls.splice(index, 1);
-          updateAdminStreamsList();
-          updatePlaylist();
-          saveStreams();
-        }
-      }
-
-      function updateAdminStreamsList() {
-        const container = document.getElementById('streamsList');
-        container.innerHTML = '';
-        
-        videoUrls.forEach((stream, index) => {
-          const div = document.createElement('div');
-          div.className = 'stream-item';
-          div.innerHTML = `
-            <span>${stream.name}</span>
-            <button class="edit" onclick="editStream(${index})">Editar</button>
-            <button class="delete" onclick="deleteStream(${index})">Eliminar</button>
-          `;
-          container.appendChild(div);
-        });
-      }
-
-      function saveStreams() {
-        localStorage.setItem('videoUrls', JSON.stringify(videoUrls));
-      }
-
-      function loadStreams() {
-        const saved = localStorage.getItem('videoUrls');
-        if (saved) {
-          videoUrls = JSON.parse(saved);
-          updatePlaylist();
-        }
-      }
-      function handleTouchStart(evt) {
-        const firstTouch = evt.touches[0];
-        window.touchStartY = firstTouch.clientY;
-        window.touchStartX = firstTouch.clientX;
-      }
-
-      function handleTouchMove(evt) {
-        if (!window.touchStartY || !window.touchStartX) {
-          return;
-        }
-
-        const touch = evt.touches[0];
-        const deltaY = window.touchStartY - touch.clientY;
-        const deltaX = window.touchStartX - touch.clientX;
-        
-        const playlistContainer = document.getElementById('playlistContainer');
-        const isPlaylistScrolling = evt.target.closest('#playlistContainer');
-        
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-          if (deltaX > 50) { // Swipe left
-            playlistContainer.classList.add('hidden');
-            playlistVisible = false;
-          } else if (deltaX < -50) { // Swipe right
-            playlistContainer.classList.remove('hidden');
-            playlistVisible = true;
-          }
-          evt.preventDefault();
-        } else if (isPlaylistScrolling) {
-          playlistContainer.scrollTop += deltaY;
-          evt.preventDefault(); 
-        } else {
-          window.scrollBy(0, deltaY);
-        }
-        
-        window.touchStartY = touch.clientY;
-        window.touchStartX = touch.clientX;
-      }
-
-      function handleTouchEnd() {
-        window.touchStartY = null;
-        window.touchStartX = null;
-        
-        const playlistContainer = document.getElementById('playlistContainer');
-        const clickedPlaylistItem = event.target.closest('.playlist-item');
-        
-        if (clickedPlaylistItem) {
-          playlistContainer.classList.add('hidden');
-          setTimeout(() => {
-            playlistContainer.classList.remove('hidden'); 
-          }, 2000);
-        }
-      }
-      document.addEventListener('keydown', function(e) {
-        if ([38, 40].includes(e.keyCode)) { 
-          e.preventDefault();
-        }
-      }, false);
-      document.addEventListener('DOMContentLoaded', () => {
-        loadStreams();
+    function updateAdminStreamsList() {
+      const container = document.getElementById('streamsList');
+      container.innerHTML = '';
+      
+      videoUrls.forEach((stream, index) => {
+        const div = document.createElement('div');
+        div.className = 'stream-item';
+        div.innerHTML = `
+          <span>${stream.name}</span>
+          <button class="edit" onclick="editStream(${index})">Editar</button>
+          <button class="delete" onclick="deleteStream(${index})">Eliminar</button>
+        `;
+        container.appendChild(div);
       });
-    })();
+    }
+
+    function saveStreams() {
+      localStorage.setItem('videoUrls', JSON.stringify(videoUrls));
+    }
+
+    function loadStreams() {
+      const saved = localStorage.getItem('videoUrls');
+      if (saved) {
+        videoUrls = JSON.parse(saved);
+        updatePlaylist();
+      }
+    }
+    function handleTouchStart(evt) {
+      const firstTouch = evt.touches[0];
+      window.touchStartY = firstTouch.clientY;
+      window.touchStartX = firstTouch.clientX;
+    }
+
+    function handleTouchMove(evt) {
+      if (!window.touchStartY || !window.touchStartX) {
+        return;
+      }
+
+      const touch = evt.touches[0];
+      const deltaY = window.touchStartY - touch.clientY;
+      const deltaX = window.touchStartX - touch.clientX;
+      const playlistContainer = document.getElementById('playlistContainer');
+
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX > 50) { // Swipe left
+          playlistContainer.classList.add('hidden');
+        } else if (deltaX < -50) { // Swipe right  
+          playlistContainer.classList.remove('hidden');
+        }
+        evt.preventDefault();
+      } else {
+        window.scrollBy(0, deltaY);
+      }
+      
+      window.touchStartY = touch.clientY;
+      window.touchStartX = touch.clientX;
+    }
+
+    function handleTouchEnd() {
+      window.touchStartY = null;
+      window.touchStartX = null;
+      
+      const clickedPlaylistItem = event.target.closest('.playlist-item');
+      if (clickedPlaylistItem) {
+      }
+    }
+    document.addEventListener('keydown', function(e) {
+      if ([38, 40].includes(e.keyCode)) { // Up and Down arrow keys
+        e.preventDefault();
+      }
+    }, false);
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+      }, { passive: true });
+      loadStreams();
+    });
+    const browserCompatibility = {
+      init() {
+        return {
+          isIE: !!document.documentMode,
+          isEdge: !document.documentMode && !!window.StyleMedia,
+          isChrome: !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime),
+          isFirefox: typeof InstallTrigger !== 'undefined',
+          isSafari: /^((?!chrome|android).)*safari/i.test(navigator.userAgent),
+          isMobile: /Mobi|Android/i.test(navigator.userAgent),
+          isBrowserAlert: window.alert && typeof window.alert === 'function',
+        };
+      }
+    };
+
+    // Initialize browser detection
+    const browser = browserCompatibility.init();
+    document.addEventListener('DOMContentLoaded', () => {
+      const passwordInput = document.getElementById('passwordInput');
+      const loginForm = document.getElementById('loginContainer');
+      
+      // Prevent autocomplete/autofill across browsers
+      passwordInput.setAttribute('autocomplete', 'off');
+      passwordInput.setAttribute('readonly', 'readonly');
+      setTimeout(() => {
+        passwordInput.removeAttribute('readonly');
+      }, 100);
+      
+      // Handle form submission across browsers
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        checkPassword();
+      });
+
+      // Handle password input events
+      ['cut', 'copy', 'paste'].forEach(event => {
+        passwordInput.addEventListener(event, (e) => {
+          e.preventDefault();
+          return false;
+        });
+      });
+      
+      // Handle Enter key across browsers
+      passwordInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+          e.preventDefault();
+          checkPassword();
+        }
+      });
+
+      // Initialize other event listeners
+      const playlistContainer = document.getElementById('playlistContainer');
+      const addTouchListener = (element, event, handler, options = false) => {
+        if (element) {
+          element.addEventListener(event, handler, options);
+        }
+      };
+
+      addTouchListener(playlistContainer, 'touchstart', handleTouchStart);
+      addTouchListener(playlistContainer, 'touchmove', handleTouchMove, {passive: false});
+      addTouchListener(playlistContainer, 'touchend', handleTouchEnd);
+      addTouchListener(document.body, 'touchstart', handleTouchStart);
+      addTouchListener(document.body, 'touchmove', handleTouchMove, {passive: false});
+      addTouchListener(document.body, 'touchend', handleTouchEnd);
+    });
   </script>
 </body>
 </html>
