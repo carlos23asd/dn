@@ -486,7 +486,7 @@
           <button class="fullscreen-btn" id="fullscreenButton">Pantalla Completa</button>
         </div>
       </div>
-      <div id="playlistContainer" class="playlist-container">
+      <div id="playlistContainer" class="playlist-container hidden">
         <h3>Lista de Reproductores</h3>
         <div id="playlistItems"></div>
       </div>
@@ -676,7 +676,7 @@
       let lastOKPressTime = 0;
       let isFullScreen = false;
       let touchStartX = null;
-      let playlistVisible = true;
+      let playlistVisible = false;
       async function urlVerificationBot() {
         for (let i = 0; i < videoUrls.length; i++) {
           const url = videoUrls[i].url;
@@ -1119,8 +1119,8 @@
           videoContainer.classList.remove('hidden');
 
           const playlistContainer = document.getElementById('playlistContainer');
-          playlistContainer.style.display = 'block';
-          playlistContainer.classList.remove('hidden');
+          playlistContainer.classList.add('hidden');
+          playlistVisible = false;
 
           loadStreams();
           initializeVideoPage();
