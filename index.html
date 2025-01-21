@@ -1,23 +1,13 @@
-<html><head><base href="https://example.com/">
-  <title>Dn streaming</title>
+<html><head><base href>
+<title>Reproductor de Video con HLS</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flv.js@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/puppeteer-core@1.24.0/dist/puppeteer-core.cjs"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios@0.27.2/dist/axios.min.js"></script>
   <style>
     body {
-      margin: 0; 
+      margin: 0;
       padding: 20px;
       background: #1a1a1a;
       color: white;
       font-family: Arial, sans-serif;
-      -webkit-user-select: none;
-      -moz-user-select: none; 
-      -ms-user-select: none;
-      user-select: none;
-      overflow-y: auto; 
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch; 
     }
     
     .video-container {
@@ -27,7 +17,7 @@
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-      display: block;
+      display: none;
     }
     
     video {
@@ -65,73 +55,158 @@
       border: 1px solid #666;
     }
 
-    .fullscreen-btn {
-      background: #4CAF50;
-      border: none;
-      color: white;
-      padding: 8px 16px;
+    .login-container {
+      max-width: 400px;
+      margin: 50px auto;
+      background: #333;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+
+    .login-container input {
+      width: 100%;
+      padding: 8px;
+      margin: 10px 0;
+      border: 1px solid #666;
       border-radius: 4px;
-      cursor: pointer;
-      transition: background 0.3s;
-      margin-left: 10px;
+      background: #444;
+      color: white;
     }
-    
-    .fullscreen-btn:hover {
-      background: #45a049;
+
+    .error-message {
+      color: #ff4444;
+      margin: 10px 0;
     }
-    
-    .playlist-container {
+
+    .main-content {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .change-password-container {
+      display: none;
+      width: 300px;
+      background: #333;
+      padding: 15px;
+      border-radius: 8px;
+      height: fit-content;
+    }
+
+    .change-password-container input {
+      width: 100%;
+      padding: 8px;
+      margin: 10px 0;
+      border: 1px solid #666;
+      border-radius: 4px;
+      background: #444;
+      color: white;
+    }
+
+    .success-message {
+      color: #4CAF50;
+      margin: 10px 0;
+    }
+
+    .video-section {
+      flex-grow: 1;
+    }
+
+    .playlist-container {
+      display: none;
+      margin-top: 20px;
       background: #333;
       padding: 15px;
       border-radius: 8px;
     }
-    
-    .playlist-container.hidden {
-      display: none !important;
-    }
-    
+
     .playlist-item {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      width: 80px;
-      height: 80px;
-      padding: 8px;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding: 10px;
       background: #444;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.2s;
+      border-radius: 4px;
     }
-    
-    .playlist-item:hover {
-      background: #555;
-    }
-    
+
     .playlist-item button {
+      padding: 4px 8px;
+    }
+
+    .add-url-container {
+      margin-bottom: 15px;
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+    }
+
+    .add-url-container input {
+      padding: 8px;
+      border: 1px solid #666;
+      border-radius: 4px;
+      background: #444;
+      color: white;
+    }
+
+    .playlist-name {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+
+    .user-management-container {
+      width: 300px;
+      background: #333;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .user-list {
+      margin-top: 15px;
+    }
+
+    .user-item {
+      background: #444;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .user-form input {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      border: 1px solid #666;
+      border-radius: 4px;
+      background: #444;
+      color: white;
+    }
+
+    .user-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .expiry-date {
+      font-size: 0.9em;
+      color: #aaa;
+      margin-top: 5px;
+    }
+
+    .logout-button {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 100;
       display: none;
     }
     
-    .playlist-name {
-      font-size: 0.7em;
-      text-align: center;
-      word-wrap: break-word;
-      max-width: 100%;
-      margin-top: 5px;
-    }
-    
-    .playlist-item::before {
-      content: '';
-      width: 40px;
-      height: 40px;
-      background: #666;
-      border-radius: 50%;
-      margin-bottom: 5px;
-    }
-    
+    /* Add new CSS for stream status */
     .stream-status {
       margin-top: 20px;
       background: #333;
@@ -182,1263 +257,748 @@
       color: #aaa;
     }
     
-    .viewer-count {
-      text-align: center;
-      background: #333;
-      padding: 10px;
-      margin-top: 20px;
-      border-radius: 8px;
-      color: white;
-    }
-    
-    .tv-focus {
-      outline: 3px solid yellow;
-      background-color: rgba(255, 255, 0, 0.2);
-    }
-
-    .tv-navigation {
-      text-align: center;
-      background: #333;
-      color: white;
-      padding: 10px;
-      margin-top: 20px;
-      border-radius: 8px;
-    }
-    .playlist-name {
-      cursor: pointer;
-    }
-    
-    /* Add login styles */
-    .login-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-
-    .login-box {
-      background: #333;
-      padding: 30px;
-      border-radius: 8px;
-      text-align: center;
-    }
-
-    input[type="password"] {
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
-      width: 100%;
-      box-sizing: border-box;
-      padding: 10px;
-      margin: 10px 0;
-    }
-
-    .login-box input {
-      border-radius: 4px;
-      background: #444;
-      color: white;
-      border: 1px solid #666;
-    }
-
-    .login-box button {
-      margin-top: 10px;
-      width: 100%;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-    
-    .main-content {
-      display: none;
-      overflow-y: auto;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      height: auto;
-      min-height: 100%;
-    }
-    
-    .main-content.visible {
-      display: block;
-    }
-    
-    .stream-verification-results {
-      margin-top: 20px;
+    /* Add new CSS for database configuration */
+    .database-config-container {
+      width: 300px;
       background: #333;
       padding: 15px;
       border-radius: 8px;
-    }
-    
-    .stream-detail {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-      padding: 10px;
-      background: #444;
-      border-radius: 4px;
-    }
-    
-    .stream-status-indicator {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
-    .video-section {
-      display: flex; 
-      gap: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
-      align-items: flex-start;
-    }
-    
-    #playlistContainer {
-      width: 200px;
-      padding: 10px;
-      background: #333;
-      border-radius: 8px;
-    }
-    
-    .playlist-item {
-      width: auto;
-      height: auto;
-      min-height: 0;
-      padding: 8px;
-      margin-bottom: 5px;
-      display: block;
-    }
-    
-    .playlist-item::before {
+      margin-top: 20px;
       display: none;
     }
-    
-    .playlist-name {
-      font-size: 0.8em;
-      text-align: left;  
-      margin: 0;
-    }
-    
-    .stream-verification-results {
+
+    .database-config-container input {
       width: 100%;
-      margin-top: 20px;
+      padding: 8px;
+      margin: 5px 0;
+      border: 1px solid #666;
+      border-radius: 4px;
+      background: #444;
+      color: white;
     }
-    
-    /* Add this to prevent scroll */
-    html, body {
-      scroll-behavior: smooth;
-      overscroll-behavior: none;
-    }
-    
-    .admin-controls {
-      margin: 20px auto;
-      max-width: 800px;
-      background: #333;
-      padding: 20px;
-      border-radius: 8px;
-    }
-    
-    .stream-editor {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    
-    .stream-editor input,
-    .stream-editor select {
+
+    .database-status {
+      margin-top: 10px;
       padding: 8px;
       border-radius: 4px;
-      background: #444;
+    }
+
+    .database-status.connected {
+      background: #4CAF50;
       color: white;
-      border: 1px solid #666;
     }
-    
-    #loginType {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 4px;
-      background: #444;
-      color: white;
-      border: 1px solid #666;
-    }
-    
-    #streamsList {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    
-    .stream-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: #444;
-      padding: 10px;
-      border-radius: 4px;
-    }
-    
-    .stream-item button {
-      padding: 4px 8px;
-      font-size: 12px;
-    }
-    
-    .stream-item .delete {
+
+    .database-status.error {
       background: #f44336;
-    }
-    
-    .stream-item .edit {
-      background: #2196F3;
-    }
-    * { 
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-    }
-    
-    /* Improved mobile login styles */
-    input[type="password"], select {
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
-      font-size: 16px; /* Prevents auto-zoom on iOS */
-      padding: 12px;
-      width: 100%;
-      box-sizing: border-box;
-      margin: 10px 0;
-    }
-
-    .login-box button {
-      touch-action: manipulation;
-      font-size: 16px;
-      padding: 12px;
-      margin-top: 10px;
-    }
-
-    .login-box {
-      width: 90%;
-      max-width: 400px;
-    }
-
-    /* Prevent auto-zoom on input focus */
-    @media screen and (max-width: 768px) {
-      input[type="password"], select {
-        font-size: 16px !important;
-      }
+      color: white;
     }
   </style>
-  <meta name="referrer" content="no-referrer">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 </head>
 <body>
-  <div id="loginContainer" class="login-container">
-    <div class="login-box">
-      <h2>Iniciar Sesión</h2>
-      <select id="loginType" tabindex="1">
-        <option value="user">Usuario</option>
-        <option value="admin">Administrador</option>
-      </select>
-      <input 
-        type="password" 
-        id="passwordInput" 
-        placeholder="Contraseña" 
-        autocomplete="off" 
-        tabindex="2"
-        inputmode="numeric"
-        pattern="[0-9]*"
-      >
-      <button 
-        onclick="checkPassword()" 
-        tabindex="3"
-      >
-        Ingresar
-      </button>
-    </div>
+  <div id="loginForm" class="login-container">
+    <h2>Iniciar Sesi&#xf3;n</h2>
+    <div id="loginError" class="error-message"></div>
+    <input type="text" id="username" placeholder="Usuario">
+    <input type="password" id="password" placeholder="Contrase&#xf1;a">
+    <button onclick="login()">Ingresar</button>
   </div>
-  
-  <div id="adminControls" class="admin-controls hidden">
-    <h3>Controles de Administrador</h3>
-    <div class="stream-editor">
-      <input type="text" id="streamName" placeholder="Nombre del stream">
-      <input type="text" id="streamUrl" placeholder="URL del stream">
-      <select id="streamType">
-        <option value="hls">HLS</option>
-        <option value="flv">FLV</option>
-      </select>
-      <button onclick="addStream()">Agregar Stream</button>
-    </div>
-    <div id="streamsList"></div>
-  </div>
+
   <div class="main-content">
     <div class="video-section">
       <div class="video-container" id="videoContainer">
         <video id="video" controls></video>
         <div class="controls">
+          <button id="playPause">Play/Pause</button>
           <select id="quality">
             <option value>Calidad Auto</option>
           </select>
-          <button class="fullscreen-btn" id="fullscreenButton">Pantalla Completa</button>
+          <button id="fullscreen">Pantalla Completa</button>
         </div>
       </div>
-      <div id="playlistContainer" class="playlist-container hidden">
+
+      <div id="playlistContainer" class="playlist-container">
         <h3>Lista de Reproductores</h3>
+        <div class="add-url-container" id="addUrlContainer">
+          <input type="text" id="streamName" placeholder="Nombre del stream">
+          <input type="text" id="newUrl" placeholder="URL del video">
+          <button onclick="addUrl()">Agregar</button>
+        </div>
         <div id="playlistItems"></div>
       </div>
     </div>
-    <div id="botResults" class="stream-verification-results"></div>
-    <div class="viewer-count">
-      Viewer Count: <span id="viewerCount">0</span>
+
+    <div class="change-password-container" id="changePasswordContainer">
+      <h3>Cambiar Contrase&#xf1;a</h3>
+      <div id="passwordChangeError" class="error-message"></div>
+      <div id="passwordChangeSuccess" class="success-message"></div>
+      <input type="password" id="currentPassword" placeholder="Contrase&#xf1;a Actual">
+      <input type="password" id="newPassword" placeholder="Nueva Contrase&#xf1;a">
+      <input type="password" id="confirmPassword" placeholder="Confirmar Nueva Contrase&#xf1;a">
+      <button onclick="changePassword()">Cambiar Contrase&#xf1;a</button>
     </div>
-    <div id="tv-navigation" class="tv-navigation">
-      <div class="navigation-instructions">
-        &#x25b2; Subir | &#x25bc; Bajar | OK Seleccionar
+
+    <div class="user-management-container" id="userManagementContainer">
+      <h3>Gesti&#xf3;n de Usuarios</h3>
+      <div id="userManagementError" class="error-message"></div>
+      <div id="userManagementSuccess" class="success-message"></div>
+      <div class="user-form">
+        <input type="text" id="newUsername" placeholder="Nombre de usuario">
+        <input type="password" id="newUserPassword" placeholder="Contrase&#xf1;a">
+        <input type="date" id="expiryDate" placeholder="Fecha de expiraci&#xf3;n">
+        <button onclick="createUser()">Crear Usuario</button>
       </div>
+      <div class="user-list" id="userList"></div>
+    </div>
+
+    <div class="database-config-container" id="databaseConfigContainer">
+      <h3>Configuraci&#xf3;n de Base de Datos</h3>
+      <div id="dbConfigError" class="error-message"></div>
+      <div id="dbConfigSuccess" class="success-message"></div>
+      <input type="text" id="dbHost" placeholder="Host de la base de datos">
+      <input type="text" id="dbPort" placeholder="Puerto (predeterminado: 3306)">
+      <input type="text" id="dbName" placeholder="Nombre de la base de datos">
+      <input type="text" id="dbUser" placeholder="Usuario">
+      <input type="password" id="dbPassword" placeholder="Contrase&#xf1;a">
+      <button onclick="testConnection()">Probar Conexi&#xf3;n</button>
+      <button onclick="saveDbConfig()">Guardar Configuraci&#xf3;n</button>
+      <div id="dbStatus" class="database-status"></div>
     </div>
   </div>
-  <script>
-    (function() {
-      document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        return false;
-      });
+  <button id="logoutButton" class="logout-button" onclick="logout()">Cerrar Sesi&#xf3;n</button>
 
-      document.addEventListener('keydown', function(e) {
-        if (
-          e.key === 'F12' || 
-          (e.ctrlKey && e.shiftKey && e.key === 'I') ||
-          (e.ctrlKey && e.key === 'U')
-        ) {
-          e.preventDefault();
-          return false;
-        }
-      });
-
-      function checkDevTools() {
-        const threshold = 200;
-        const start = performance.now();
-        console.log('');
-        const end = performance.now();
-        
-        if (end - start > threshold) {
-          window.location.reload();
-        }
-      }
-
-      setInterval(checkDevTools, 1000);
-
-      ['log', 'warn', 'error', 'info', 'debug'].forEach(method => {
-        const originalMethod = console[method];
-        console[method] = function() {
+  <script>let users = {
+  'luis': {
+    password: 'luis',
+    isAdmin: true
+  },
+  ...Object.fromEntries(Array.from({
+    length: 100
+  }, (_, i) => [`dn${i + 1}`, {
+    password: `Cliente${i + 1}`,
+    expiryDate: null
+  }]))
+};
+let currentUser = null;
+let videoUrls = [{
+  name: 'Stream Principal',
+  url: 'https://stream.gia.tv/giatv/giatv-Gary2CanalGary2Canal/Gary2CanalGary2Canal/chunks.m3u8'
+}, {
+  name: 'Win+',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}];
+videoUrls.push({
+  name: 'ESPN',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}, {
+  name: 'ESPN 2',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}, {
+  name: 'ESPN 3',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+});
+videoUrls.push({
+  name: 'ESPN 4',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}, {
+  name: 'ESPN EXTRA',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}, {
+  name: 'ESPN Premium',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+}, {
+  name: 'Directv',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+});
+videoUrls.push({
+  name: 'Solo eventos',
+  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+});
+let currentHls = null;
+let streamStatuses = {};
+let deviceSessions = {};
+let dbConfig = {
+  host: '',
+  database: '',
+  user: '',
+  password: '',
+  port: 3306,
+  dialect: 'mysql'
+};
+function generateDeviceId() {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+function login() {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  const errorElement = document.getElementById('loginError');
+  if (users[username] && users[username].password === password) {
+    if (users[username].expiryDate && new Date(users[username].expiryDate) < new Date()) {
+      errorElement.textContent = 'Tu cuenta ha expirado';
+      return;
+    }
+    const deviceId = generateDeviceId();
+    if (deviceSessions[username]) {
+      const oldDeviceId = deviceSessions[username];
+      localStorage.setItem('forceLogout', JSON.stringify({
+        username: username,
+        deviceId: oldDeviceId,
+        timestamp: Date.now()
+      }));
+    }
+    deviceSessions[username] = deviceId;
+    localStorage.setItem('currentDevice', JSON.stringify({
+      username: username,
+      deviceId: deviceId
+    }));
+    currentUser = username;
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('videoContainer').style.display = 'block';
+    document.getElementById('playlistContainer').style.display = 'block';
+    if (username === 'luis') {
+      document.getElementById('changePasswordContainer').style.display = 'block';
+      document.getElementById('addUrlContainer').style.display = 'grid';
+      document.getElementById('userManagementContainer').style.display = 'block';
+      document.getElementById('databaseConfigContainer').style.display = 'block';
+      renderUserCredentialsList();
+    } else {
+      document.getElementById('addUrlContainer').style.display = 'none';
+    }
+    document.getElementById('logoutButton').style.display = 'block';
+    initializeVideo();
+    updatePlaylist();
+    if (username === 'luis') {
+      updateUserList();
+    }
+  } else {
+    errorElement.textContent = 'Usuario o contraseÃ±a incorrectos';
+  }
+}
+function changePassword() {
+  const currentPassword = document.getElementById('currentPassword').value;
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+  const errorElement = document.getElementById('passwordChangeError');
+  const successElement = document.getElementById('passwordChangeSuccess');
+  errorElement.textContent = '';
+  successElement.textContent = '';
+  if (currentPassword !== users[currentUser].password) {
+    errorElement.textContent = 'La contraseÃ±a actual es incorrecta';
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    errorElement.textContent = 'Las nuevas contraseÃ±as no coinciden';
+    return;
+  }
+  if (newPassword.length < 1) {
+    errorElement.textContent = 'La nueva contraseÃ±a no puede estar vacÃ­a';
+    return;
+  }
+  users[currentUser].password = newPassword;
+  successElement.textContent = 'ContraseÃ±a cambiada exitosamente';
+  document.getElementById('currentPassword').value = '';
+  document.getElementById('newPassword').value = '';
+  document.getElementById('confirmPassword').value = '';
+}
+function addUrl() {
+  const newName = document.getElementById('streamName').value.trim();
+  const newUrl = document.getElementById('newUrl').value.trim();
+  if (newUrl && newName && currentUser === 'luis') {
+    videoUrls.push({
+      name: newName,
+      url: newUrl
+    });
+    updatePlaylist();
+    syncDataWithDb();
+    document.getElementById('newUrl').value = '';
+    document.getElementById('streamName').value = '';
+  }
+}
+function removeUrl(index) {
+  if (currentUser === 'luis') {
+    videoUrls.splice(index, 1);
+    syncDataWithDb();
+    updatePlaylist();
+  }
+}
+function playUrl(url) {
+  if (currentHls) {
+    currentHls.destroy();
+  }
+  const video = document.getElementById('video');
+  const qualitySelect = document.getElementById('quality');
+  qualitySelect.innerHTML = '<option value="">Calidad Auto</option>';
+  if (Hls.isSupported()) {
+    currentHls = new Hls();
+    currentHls.loadSource(url);
+    currentHls.attachMedia(video);
+    currentHls.on(Hls.Events.ERROR, function (event, data) {
+      const streamIndex = videoUrls.findIndex(item => item.url === url);
+      if (streamIndex !== -1) {
+        streamStatuses[url] = {
+          status: 'error',
+          message: `Error: ${data.type} - ${data.details}`
         };
-      });
-
-      Object.defineProperty(document, 'documentElement', {
-        get: function() {
-          return null;
-        }
-      });
-
-      const originalCreateElement = document.createElement;
-      document.createElement = function(tagName) {
-        if (tagName.toLowerCase() === 'script') {
-          return null;
-        }
-        return originalCreateElement.call(document, tagName);
-      };
-
-      window.checkPassword = function(a,b){
-        return (function(x,y){
-          return x === '12' && y === 'user' || x === '2003' && y === 'admin';
-        })(a,b);
-      };
-
-      let loginAttempts = 0;
-      let lastFailedLoginTime = null;
-      const LOGIN_COOLDOWN_SECONDS = 30;
-      let videoUrls = [{
-        name: 'Canal Caracol',
-        url: 'https://stream.gia.tv/giatv/giatv-Gary2CanalGary2Canal/Gary2CanalGary2Canal/chunks.m3u8',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'Simpson 24/7',
-        url: 'https://stream-cdn-iad2.vaughnsoft.net/play/live_simpson_maniahd193.flv',
-        type: 'flv',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'Win+',
-        url: 'https://14c5.pricesaskeloadsc.com/winplusonline1/tracks-v1a1/mono.m3u8?token=225a018d037f25863cdf896a06973b354d0bf35d-b2-1736775912-1736739912',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'ESPN',
-        url: 'https://jf3.naqsheala.com:999/hls/extremolenovo.m3u8?md5=_ce7KUfezogjF4Z4-O04xw&expires=1737326979',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'ESPN 2',
-        url: 'https://jf1.naqsheala.com:999/hls/espn22.m3u8?md5=MEuo2Q7X0CqVIw0EM7hexg&expires=1736889347',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'ESPN 3',
-        url: 'https://d2hpc3rszq.fubohd.com/espn3/tracks-v1a1/mono.m3u8?token=1d4371cfdf60f9ab1aeb0338c76c456783ee18ae-80-1736918366-1736882366',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'ESPN 4',
-        url: 'https://d2hpc3rszq.fubohd.com/espn4/tracks-v1a1/mono.m3u8?token=bc5365d1fed0db4ba30df966d459f01b9506e1c1-0b-1736918524-1736882524',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'ESPN EXTRA',
-        url: 'https://z29vzc.fubohd.com/espn5/tracks-v1a1/mono.m3u8?token=1d4f70cde256a38835ab25ebd3e47b6911f7b337-87-1736918551-1736882551',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'ESPN Premium',
-        url: 'https://vals88.pricesaskeloadsc.com/espn_premium/tracks-v1a1/mono.m3u8?token=99eeaf820239dd431679e36e68c887c8fac4bcec-f3-1736777230-1736741230',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'Directv',
-        url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }, {
-        name: 'Solo eventos',
-        url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792',
-        type: 'hls',
-        isWorking: true,
-        lastChecked: null,
-        errorDetails: ''
-      }];
-      let currentHls = null;
-      let currentFlv = null;
-      let streamStatuses = {};
-      let viewerCount = 0;
-      const TV_KEYS = {
-        UP: 38,
-        DOWN: 40,
-        OK: 13,
-        OK_DOUBLE_PRESS_TIMEOUT: 300
-      };
-      const VIDEO_CONTROLS = {
-        PLAY_PAUSE: 0,
-        QUALITY: 1
-      };
-      let currentTVFocus = {
-        section: 'playlist',
-        index: 0
-      };
-      const STREAM_OPTIMIZATION_CONFIG = {
-        lowLatencyMode: true,
-        dynamicBufferAdjustment: true,
-        networkAdaptation: {
-          slowNetworkThreshold: 500,
-          fastNetworkThreshold: 100,
-          bufferSizeMultipliers: {
-            slow: 0.5,
-            normal: 1,
-            fast: 2
-          }
-        }
-      };
-      let isLoggedIn = false;
-      let isAdmin = false;
-      let editingStreamIndex = -1;
-      let lastOKPressTime = 0;
-      let isFullScreen = false;
-      let touchStartX = null;
-      let playlistVisible = false;
-      async function urlVerificationBot() {
-        for (let i = 0; i < videoUrls.length; i++) {
-          const url = videoUrls[i].url;
-          try {
-            const response = await axios.head(url, {
-              timeout: 5000
-            });
-            if (response.status === 200) {
-              videoUrls[i].isWorking = true;
-              videoUrls[i].lastChecked = new Date().getTime();
-              videoUrls[i].errorDetails = '';
-            } else {
-              videoUrls[i].isWorking = false;
-              videoUrls[i].lastChecked = new Date().getTime();
-              videoUrls[i].errorDetails = `Error ${response.status}: ${response.statusText}`;
-            }
-          } catch (error) {
-            videoUrls[i].isWorking = false;
-            videoUrls[i].lastChecked = new Date().getTime();
-            videoUrls[i].errorDetails = error.message;
-          }
+        updateStreamStatus();
+      }
+    });
+    currentHls.on(Hls.Events.FRAG_LOADED, function (event, data) {
+      const loadTime = data.stats.loading.end - data.stats.loading.start;
+      const streamIndex = videoUrls.findIndex(item => item.url === url);
+      if (streamIndex !== -1) {
+        if (loadTime > 2000) {
+          streamStatuses[url] = {
+            status: 'slow',
+            message: 'ReproducciÃ³n lenta - Alta latencia'
+          };
+        } else {
+          streamStatuses[url] = {
+            status: 'good',
+            message: 'ReproducciÃ³n estable'
+          };
         }
         updateStreamStatus();
       }
-      function checkStreamAvailability(url) {
-        return videoUrls.find(item => item.url === url).isWorking;
-      }
-      function getStreamMetadata(url) {
-        return videoUrls.find(item => item.url === url);
-      }
-      function logStreamDetails(streamInfo) {
-        console.log(`Stream: ${streamInfo.name}, URL: ${streamInfo.url}, Status: ${streamInfo.isWorking}, Last Checked: ${streamInfo.lastChecked}, Error Details: ${streamInfo.errorDetails}`);
-      }
-      function updateStreamStatus() {
-        const statusContainer = document.getElementById('botResults');
-        statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
-        
-        const statusContent = document.createElement('div');
-        videoUrls.forEach(item => {
-          const status = item.isWorking ? 'good' : 'error';
-          const statusItem = document.createElement('div');
-          statusItem.className = 'status-item';
-          
-          const indicator = document.createElement('div'); 
-          indicator.className = `status-indicator status-${status}`;
-          
-          const details = document.createElement('div');
-          details.className = 'status-details';
-          
-          const name = document.createElement('div');
-          name.className = 'status-name';
-          name.textContent = item.name;
-          
-          const message = document.createElement('div');
-          message.className = 'status-message';
-          message.textContent = item.errorDetails || 'Reproduccion estable';
-          
-          details.appendChild(name);
-          details.appendChild(message);
-          statusItem.appendChild(indicator);
-          statusItem.appendChild(details);
-          statusContent.appendChild(statusItem);
-        });
-
-        statusContainer.appendChild(statusContent);
-      }
-      async function detectNetworkSpeed() {
-        try {
-          const start = performance.now();
-          await fetch('https://www.example.com', {
-            method: 'HEAD',
-            mode: 'no-cors'
-          });
-          const end = performance.now();
-          const pingTime = end - start;
-          if (pingTime > STREAM_OPTIMIZATION_CONFIG.networkAdaptation.slowNetworkThreshold) {
-            return 'slow';
-          } else if (pingTime < STREAM_OPTIMIZATION_CONFIG.networkAdaptation.fastNetworkThreshold) {
-            return 'fast';
-          }
-          return 'normal';
-        } catch (error) {
-          return 'normal';
-        }
-      }
-      function trackNetworkPerformance(url, loadTime) {
-        const streamIndex = videoUrls.findIndex(item => item.url === url);
-        if (streamIndex !== -1) {
-          if (loadTime > 2000) {
-            streamStatuses[url] = {
-              status: 'slow',
-              message: 'Red lenta - Ajustando buffer'
-            };
-          } else {
-            streamStatuses[url] = {
-              status: 'good',
-              message: 'Reproduccion optimizada'
-            };
-          }
-          updateStreamStatus();
-        }
-      }
-      function playUrl(url, type) {
-        const playlistContainer = document.getElementById('playlistContainer');
-        playlistContainer.classList.add('hidden');
-        
-        if (currentHls) {
-          currentHls.destroy();
-          currentHls = null;
-        }
-        if (currentFlv) {
-          currentFlv.destroy();
-          currentFlv = null;
-        }
-        const video = document.getElementById('video');
-        const qualitySelect = document.getElementById('quality');
-        qualitySelect.innerHTML = '<option value="">Calidad Auto</option>';
-        video.src = '';
-        if (type === 'hls' && Hls.isSupported()) {
-          detectNetworkSpeed().then(networkSpeed => {
-            const bufferMultiplier = STREAM_OPTIMIZATION_CONFIG.networkAdaptation.bufferSizeMultipliers[networkSpeed];
-            currentHls = new Hls({
-              maxBufferLength: 30 * bufferMultiplier,
-              maxBufferSize: 30 * 1000 * 1000 * bufferMultiplier,
-              fragLoadingMaxRetry: bufferMultiplier === 0.5 ? 1 : 2,
-              liveSyncDuration: 30 * bufferMultiplier,
-              liveMaxLatencyDuration: 45 * bufferMultiplier,
-              enableWorker: true,
-              backBufferLength: 10 * bufferMultiplier
-            });
-            video.addEventListener('pause', () => {
-              if (currentHls) {
-                currentHls.config.maxBufferLength = 60 * bufferMultiplier;
-              }
-            });
-            video.addEventListener('play', () => {
-              if (currentHls) {
-                currentHls.config.maxBufferLength = 30 * bufferMultiplier;
-              }
-            });
-            currentHls.config.enableMetadata = false;
-            currentHls.loadSource(url);
-            currentHls.attachMedia(video);
-            currentHls.on(Hls.Events.ERROR, function (event, data) {
-              const streamIndex = videoUrls.findIndex(item => item.url === url);
-              if (streamIndex !== -1) {
-                streamStatuses[url] = {
-                  status: 'error',
-                  message: `Error: ${data.type} - ${data.details}`
-                };
-                updateStreamStatus();
-              }
-            });
-            currentHls.on(Hls.Events.FRAG_LOADED, function (event, data) {
-              const loadTime = data.stats.loading.end - data.stats.loading.start;
-              trackNetworkPerformance(url, loadTime);
-              if (loadTime > 2000) {
-                streamStatuses[url] = {
-                  status: 'slow',
-                  message: 'Reproduccion lenta - Alta latencia'
-                };
-              } else {
-                streamStatuses[url] = {
-                  status: 'good',
-                  message: 'Reproduccion estable'
-                };
-              }
-              updateStreamStatus();
-            });
-            currentHls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
-              const qualities = data.levels.map((level, index) => ({
-                index: index,
-                resolution: `${level.width}x${level.height}`,
-                bitrate: level.bitrate
-              }));
-              qualities.forEach(quality => {
-                const option = document.createElement('option');
-                option.value = quality.index;
-                option.text = `${quality.resolution} (${Math.round(quality.bitrate / 1000)} kbps)`;
-                qualitySelect.appendChild(option);
-              });
-              currentHls.currentLevel = Math.min(1, currentHls.levels.length - 1);
-              video.play();
-            });
-          });
-        } else if (type === 'flv' && flvjs.isSupported()) {
-          currentFlv = flvjs.createPlayer({
-            type: 'flv',
-            url: url
-          });
-          currentFlv.attachMediaElement(video);
-          currentFlv.load();
-          currentFlv.on(flvjs.Events.ERROR, function (errorType, errorDetail) {
-            console.error('FLV Error:', errorType, errorDetail);
-          });
-        } else {
-          video.src = url;
-        }
-        video.play();
-        const streamNameDisplay = document.createElement('div');
-        streamNameDisplay.className = 'current-stream-name';
-        streamNameDisplay.textContent = videoUrls.find(v => v.url === url).name;
-        document.getElementById('videoContainer').appendChild(streamNameDisplay);
-        setTimeout(() => {
-          streamNameDisplay.style.opacity = '0';
-          setTimeout(() => {
-            streamNameDisplay.remove();
-          }, 500);
-        }, 2000);
-        
-        setTimeout(() => {
-          playlistContainer.classList.remove('hidden');
-        }, 2000);
-      }
-      function updatePlaylist() {
-        const container = document.getElementById('playlistItems');
-        container.innerHTML = '';
-        videoUrls.forEach((item, index) => {
-          const playlistItem = document.createElement('div');
-          playlistItem.className = 'playlist-item';
-          playlistItem.onclick = () => {
-            playUrl(item.url, item.type);
-          };
-          
-          const nameSpan = document.createElement('span');
-          nameSpan.className = 'playlist-name';
-          nameSpan.textContent = item.name;
-          
-          playlistItem.appendChild(nameSpan);
-          container.appendChild(playlistItem);
-        });
-        updateStreamStatus();
-      }
-      function initializeVideo() {
-        const video = document.getElementById('video');
-        const qualitySelect = document.getElementById('quality');
-        playUrl(videoUrls[0].url, videoUrls[0].type);
-        qualitySelect.addEventListener('change', function () {
-          if (currentHls) {
-            if (this.value === '') {
-              currentHls.currentLevel = -1;
-            } else {
-              const selectedLevel = Number(this.value);
-              currentHls.currentLevel = selectedLevel;
-            }
-          }
-        });
-      }
-      function initializeVideoPage() {
-        document.body.onmousedown = function (e) {
-          if (e.button === 0) {
-            e.preventDefault();
-            return false;
-          }
-        };
-        document.getElementById('videoContainer').style.display = 'block';
-        document.getElementById('playlistContainer').style.display = 'block';
-        initializeVideo();
-        updatePlaylist();
-        viewerCount++;
-        updateViewerCount();
-        document.addEventListener('keydown', handleTVNavigation);
-        document.querySelector('.main-content').style.display = 'block';
-        urlVerificationBot();
-        setInterval(urlVerificationBot, 900000);
-        
-        const playlistContainer = document.getElementById('playlistContainer');
-        playlistContainer.addEventListener('touchstart', handleTouchStart, false);
-        playlistContainer.addEventListener('touchmove', handleTouchMove, {passive: false});
-        playlistContainer.addEventListener('touchend', handleTouchEnd, false);
-      }
-      function checkReferrer() {
-        return isLoggedIn;
-      }
-      function getCurrentUser() {
-        return 'default';
-      }
-      function updateViewerCount() {
-        let viewerCountContainer = document.getElementById('viewerCountContainer');
-        if (!viewerCountContainer) {
-          viewerCountContainer = document.createElement('div');
-          viewerCountContainer.id = 'viewerCountContainer';
-          viewerCountContainer.className = 'viewer-count';
-          document.querySelector('.main-content').appendChild(viewerCountContainer);
-        }
-        viewerCountContainer.textContent = `Personas viendo: ${viewerCount}`;
-      }
-      function handleTVNavigation(event) {
-        if (event.keyCode === TV_KEYS.UP || event.keyCode === TV_KEYS.DOWN) {
-          event.preventDefault();
-        }
-
-        document.body.onmousedown = function (e) {
-          if (e.button === 0) {
-            e.preventDefault(); 
-            return false;
-          }
-        };
-
-        const playlistItems = document.querySelectorAll('.playlist-item');
-        const videoPlayer = document.getElementById('video');
-        const controls = document.querySelectorAll('.controls select');
-        const fullscreenButton = document.getElementById('fullscreenButton');
-        const navigationSections = ['playlist', 'videoPlayer', 'controls', 'fullscreenButton'];
-
-        switch (event.keyCode) {
-          case TV_KEYS.UP:
-            navigateUp(playlistItems, videoPlayer, controls, fullscreenButton);
-            break;
-          case TV_KEYS.DOWN: 
-            navigateDown(playlistItems, videoPlayer, controls, fullscreenButton);
-            break;
-          case TV_KEYS.OK:
-            selectCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-            break;
-          case 37: // Left arrow
-            navigateLeft();
-            break;
-          case 39: // Right arrow
-            navigateRight();
-            break;
-        }
-      }
-      function navigateUp(playlistItems, videoPlayer, controls, fullscreenButton) {
-        window.scrollTo(window.scrollX, window.scrollY);
-
-        if (currentTVFocus.section === 'playlist' && currentTVFocus.index > 0) {
-          currentTVFocus.index--;
-          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        } else if (currentTVFocus.section === 'videoPlayer') {
-          currentTVFocus.section = 'playlist';
-          currentTVFocus.index = playlistItems.length - 1;
-          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        } else if (currentTVFocus.section === 'controls') {
-          if (currentTVFocus.index > 0) {
-            currentTVFocus.index--;
-            highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-          } else {
-            currentTVFocus.section = 'videoPlayer';
-            currentTVFocus.index = 0;
-            highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-          }
-        } else if (currentTVFocus.section === 'fullscreenButton') {
-          currentTVFocus.section = 'controls';
-          currentTVFocus.index = controls.length - 1;
-          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        }
-      }
-      function navigateDown(playlistItems, videoPlayer, controls, fullscreenButton) {
-        window.scrollTo(window.scrollX, window.scrollY);
-
-        if (currentTVFocus.section === 'playlist' && currentTVFocus.index < playlistItems.length - 1) {
-          currentTVFocus.index++;
-          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        } else if (currentTVFocus.section === 'playlist' && currentTVFocus.index === playlistItems.length - 1) {
-          currentTVFocus.section = 'videoPlayer';
-          currentTVFocus.index = 0;
-          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        } else if (currentTVFocus.section === 'videoPlayer') {
-          currentTVFocus.section = 'controls';
-          currentTVFocus.index = 0;
-          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        } else if (currentTVFocus.section === 'controls' && currentTVFocus.index < controls.length - 1) {
-          currentTVFocus.index++;
-          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        } else if (currentTVFocus.section === 'controls' && currentTVFocus.index === controls.length - 1) {
-          currentTVFocus.section = 'fullscreenButton';
-          currentTVFocus.index = 0;
-          highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton);
-        }
-      }
-      function selectCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton) {
-        const now = Date.now();
-        const timeSinceLastPress = now - lastOKPressTime;
-        if (currentTVFocus.section === 'playlist' && playlistItems[currentTVFocus.index]) {
-          const playlistContainer = document.getElementById('playlistContainer');
-          playlistContainer.classList.add('hidden');
-          
-          const selectedItem = videoUrls[currentTVFocus.index];
-          playUrl(selectedItem.url, selectedItem.type);
-          
-          setTimeout(() => {
-            playlistContainer.classList.remove('hidden');
-          }, 2000);
-        } else if (currentTVFocus.section === 'controls' && controls[currentTVFocus.index]) {
-          controls[currentTVFocus.index].click();
-        } else if (currentTVFocus.section === 'fullscreenButton') {
-          fullscreenButton.click();
-        }
-      }
-      function highlightCurrentItem(playlistItems, videoPlayer, controls, fullscreenButton) {
-        playlistItems.forEach(item => item.classList.remove('tv-focus'));
-        videoPlayer.classList.remove('tv-focus');
-        controls.forEach(control => control.classList.remove('tv-focus'));
-        fullscreenButton.classList.remove('tv-focus');
-        if (currentTVFocus.section === 'playlist' && playlistItems[currentTVFocus.index]) {
-          playlistItems[currentTVFocus.index].classList.add('tv-focus');
-        } else if (currentTVFocus.section === 'videoPlayer') {
-          videoPlayer.classList.add('tv-focus');
-        } else if (currentTVFocus.section === 'controls' && controls[currentTVFocus.index]) {
-          controls[currentTVFocus.index].classList.add('tv-focus');
-        } else if (currentTVFocus.section === 'fullscreenButton') {
-          fullscreenButton.classList.add('tv-focus');
-        }
-      }
-      function navigateLeft() {
-        const playlistContainer = document.getElementById('playlistContainer');
-        if (!playlistVisible) {
-          playlistContainer.classList.remove('hidden');
-          playlistVisible = true;
-        }
-      }
-
-      function navigateRight() {
-        const playlistContainer = document.getElementById('playlistContainer');
-        if (playlistVisible) {
-          playlistContainer.classList.add('hidden');
-          playlistVisible = false;
-        }
-      }
-      function checkPassword() {
-        const loginType = document.getElementById('loginType').value;
-        const passwordInput = document.getElementById('passwordInput');
-        const password = passwordInput.value.trim();
-        passwordInput.value = '';
-
-        if ((loginType === 'user' && (password === '12' || password === '12 ' || password === ' 12')) ||
-            (loginType === 'admin' && password === '2003')) {
-          isLoggedIn = true;
-          isAdmin = loginType === 'admin';
-          loginAttempts = 0;
-          lastFailedLoginTime = null;
-
-          document.getElementById('loginContainer').classList.toggle('hidden', true);
-          document.querySelector('.main-content').classList.toggle('visible', true);
-          document.getElementById('adminControls').classList.toggle('hidden', !isAdmin);
-
-          const videoContainer = document.getElementById('videoContainer');
-          videoContainer.style.display = 'block';
-          videoContainer.classList.remove('hidden');
-
-          const playlistContainer = document.getElementById('playlistContainer');
-          playlistContainer.classList.add('hidden');
-          playlistVisible = false;
-
-          loadStreams();
-          initializeVideoPage();
-          if (isAdmin) {
-            updateAdminStreamsList();
-          }
-        } else {
-          loginAttempts++;
-          lastFailedLoginTime = Date.now();
-          window.alert('Contraseña incorrecta');
-        }
-      }
-      function handleFullScreenChange() {
-        isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
-      }
-      document.addEventListener('fullscreenchange', handleFullScreenChange);
-      document.addEventListener('webkitfullscreenchange', handleFullScreenChange);
-      document.addEventListener('mozfullscreenchange', handleFullScreenChange);
-      document.addEventListener('MSFullscreenChange', handleFullScreenChange);
-      document.addEventListener('keydown', function (e) {
-        if (e.key === 'F12' || e.ctrlKey && e.shiftKey && e.key === 'I') {
-          e.preventDefault();
-          return false;
-        }
+    });
+    currentHls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+      const qualities = data.levels.map((level, index) => ({
+        index: index,
+        resolution: `${level.width}x${level.height}`,
+        bitrate: level.bitrate
+      }));
+      qualities.forEach(quality => {
+        const option = document.createElement('option');
+        option.value = quality.index;
+        option.text = `${quality.resolution} (${Math.round(quality.bitrate / 1000)} kbps)`;
+        qualitySelect.appendChild(option);
       });
-      document.addEventListener('contextmenu', function (e) {
-        e.preventDefault();
-        return false;
-      });
-      document.getElementById('passwordInput').addEventListener('copy', function (e) {
-        e.preventDefault();
-        return false;
-      });
-      document.getElementById('passwordInput').addEventListener('cut', function (e) {
-        e.preventDefault();
-        return false;
-      });
-      document.getElementById('passwordInput').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          checkPassword();
-        }
-      });
-      document.addEventListener('keydown', handleTVNavigation);
-      document.addEventListener('DOMContentLoaded', () => {
-        const fullscreenButton = document.getElementById('fullscreenButton');
-        const video = document.getElementById('video');
-        fullscreenButton.addEventListener('click', () => {
-          if (!document.fullscreenElement) {
-            if (video.requestFullscreen) {
-              video.requestFullscreen();
-            } else if (video.mozRequestFullScreen) {
-              video.mozRequestFullScreen();
-            } else if (video.webkitRequestFullscreen) {
-              video.webkitRequestFullscreen();
-            } else if (video.msRequestFullscreen) {
-              video.msRequestFullscreen();
-            }
-          } else {
-            if (document.exitFullscreen) {
-              document.exitFullscreen();
-            } else if (document.mozCancelFullScreen) {
-              document.mozCancelFullScreen();
-            } else if (document.webkitExitFullscreen) {
-              document.webkitExitFullscreen();
-            } else if (document.msExitFullscreen) {
-              document.msExitFullscreen();
-            }
-          }
-        });
-        const playlistContainer = document.getElementById('playlistContainer');
-        playlistContainer.addEventListener('touchstart', handleTouchStart, false);
-        playlistContainer.addEventListener('touchmove', handleTouchMove, {passive: false});
-        playlistContainer.addEventListener('touchend', handleTouchEnd, false);
-        document.body.addEventListener('touchstart', handleTouchStart, false);
-        document.body.addEventListener('touchmove', handleTouchMove, {passive: false}); 
-        document.body.addEventListener('touchend', handleTouchEnd, false);
-      });
-      window.addEventListener('error', function(e) {
-        console.error('Login Error:', e.message);
-      });
-      document.addEventListener('touchmove', function(e) {
-        if (e.scale !== 1) { 
-          e.preventDefault(); 
-        }
-      }, { passive: false });
-      document.addEventListener('DOMContentLoaded', () => {
-        const passwordInput = document.getElementById('passwordInput');
-        
-        ['cut', 'copy', 'paste'].forEach(event => {
-          passwordInput.addEventListener(event, function(e) {
-            e.preventDefault();
-            return false;
-          });
-        });
-        
-        passwordInput.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter' || e.keyCode === 13) {
-            e.preventDefault();
-            checkPassword();
-          }
-        });
-      });
-      function addStream() {
-        const name = document.getElementById('streamName').value;
-        const url = document.getElementById('streamUrl').value;
-        const type = document.getElementById('streamType').value;
-        
-        if (!name || !url) {
-          alert('Por favor complete todos los campos');
-          return;
-        }
-
-        if (editingStreamIndex >= 0) {
-          videoUrls[editingStreamIndex] = {
-            name,
-            url,
-            type,
-            isWorking: true,
-            lastChecked: null,
-            errorDetails: ''
-          };
-          editingStreamIndex = -1;
-        } else {
-          videoUrls.push({
-            name,
-            url,
-            type,
-            isWorking: true,
-            lastChecked: null,
-            errorDetails: ''
-          });
-        }
-
-        document.getElementById('streamName').value = '';
-        document.getElementById('streamUrl').value = '';
-        document.getElementById('streamType').value = 'hls';
-        
-        updateAdminStreamsList();
-        updatePlaylist();
-        saveStreams();
+      video.play();
+    });
+  }
+}
+function updatePlaylist() {
+  const container = document.getElementById('playlistItems');
+  container.innerHTML = '';
+  videoUrls.forEach((item, index) => {
+    const playlistItem = document.createElement('div');
+    playlistItem.className = 'playlist-item';
+    const playButton = document.createElement('button');
+    playButton.textContent = 'Reproducir';
+    playButton.onclick = () => {
+      playUrl(item.url);
+    };
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'playlist-name';
+    nameSpan.textContent = item.name;
+    playlistItem.appendChild(playButton);
+    playlistItem.appendChild(nameSpan);
+    if (currentUser === 'luis') {
+      const urlText = document.createElement('span');
+      urlText.textContent = item.url;
+      playlistItem.appendChild(urlText);
+    }
+    if (currentUser === 'luis') {
+      const removeButton = document.createElement('button');
+      removeButton.textContent = 'Eliminar';
+      removeButton.onclick = () => removeUrl(index);
+      playlistItem.appendChild(removeButton);
+    }
+    container.appendChild(playlistItem);
+  });
+  updateStreamStatus();
+}
+function initializeVideo() {
+  const video = document.getElementById('video');
+  const playPauseBtn = document.getElementById('playPause');
+  const qualitySelect = document.getElementById('quality');
+  const fullscreenBtn = document.getElementById('fullscreen');
+  playUrl(videoUrls[0].url);
+  currentHls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+    const qualities = [{
+      index: 0,
+      resolution: '144p',
+      height: 144
+    }, {
+      index: 1,
+      resolution: '240p',
+      height: 240
+    }, {
+      index: 2,
+      resolution: '360p',
+      height: 360
+    }, {
+      index: 3,
+      resolution: '480p',
+      height: 480
+    }];
+    qualitySelect.innerHTML = '<option value="">Calidad Auto</option>';
+    data.levels.forEach(level => {
+      const matchingQuality = qualities.find(q => Math.abs(level.height - q.height) <= 50);
+      if (matchingQuality) {
+        const option = document.createElement('option');
+        option.value = level.index;
+        option.text = matchingQuality.resolution;
+        qualitySelect.appendChild(option);
       }
-
-      function editStream(index) {
-        const stream = videoUrls[index];
-        document.getElementById('streamName').value = stream.name;
-        document.getElementById('streamUrl').value = stream.url;
-        document.getElementById('streamType').value = stream.type;
-        editingStreamIndex = index;
+    });
+    video.play();
+  });
+  playPauseBtn.addEventListener('click', function () {
+    if (video.paused) {
+      video.play();
+    } else {
+      video.pause();
+    }
+  });
+  fullscreenBtn.addEventListener('click', function () {
+    if (!document.fullscreenElement) {
+      if (video.requestFullscreen) {
+        video.requestFullscreen();
+      } else if (video.webkitRequestFullscreen) {
+        video.webkitRequestFullscreen();
+      } else if (video.msRequestFullscreen) {
+        video.msRequestFullscreen();
       }
-
-      function deleteStream(index) {
-        if (confirm('¿Está seguro de eliminar este stream?')) {
-          videoUrls.splice(index, 1);
-          updateAdminStreamsList();
-          updatePlaylist();
-          saveStreams();
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    }
+  });
+  video.addEventListener('play', () => {
+    playPauseBtn.textContent = 'Pause';
+  });
+  video.addEventListener('pause', () => {
+    playPauseBtn.textContent = 'Play';
+  });
+  qualitySelect.addEventListener('change', function () {
+    if (currentHls) {
+      if (this.value === '') {
+        currentHls.currentLevel = -1;
+      } else {
+        const selectedLevel = Number(this.value);
+        currentHls.currentLevel = selectedLevel;
+        console.log(`Selected quality: ${currentHls.levels[selectedLevel].height}p`);
+      }
+    }
+  });
+}
+function createUser() {
+  if (currentUser !== 'luis') return;
+  const username = document.getElementById('newUsername').value.trim();
+  const password = document.getElementById('newUserPassword').value;
+  const expiryDate = document.getElementById('expiryDate').value;
+  const errorElement = document.getElementById('userManagementError');
+  const successElement = document.getElementById('userManagementSuccess');
+  errorElement.textContent = '';
+  successElement.textContent = '';
+  if (!username || !password) {
+    errorElement.textContent = 'Usuario y contraseÃ±a son requeridos';
+    return;
+  }
+  if (users[username]) {
+    errorElement.textContent = 'El usuario ya existe';
+    return;
+  }
+  users[username] = {
+    password: password,
+    expiryDate: expiryDate || null
+  };
+  successElement.textContent = 'Usuario creado exitosamente';
+  document.getElementById('newUsername').value = '';
+  document.getElementById('newUserPassword').value = '';
+  document.getElementById('expiryDate').value = '';
+  updateUserList();
+  syncDataWithDb();
+}
+function updateUserList() {
+  if (currentUser !== 'luis') {
+    const existingList = document.getElementById('userCredentialsList');
+    if (existingList) {
+      existingList.remove();
+    }
+    return;
+  }
+  const container = document.getElementById('userList');
+  container.innerHTML = '';
+  Object.entries(users).forEach(([username, userData]) => {
+    if (username === 'luis') return;
+    const userItem = document.createElement('div');
+    userItem.className = 'user-item';
+    const nameElement = document.createElement('div');
+    nameElement.textContent = `Usuario: ${username}`;
+    userItem.appendChild(nameElement);
+    if (userData.expiryDate) {
+      const expiryElement = document.createElement('div');
+      expiryElement.className = 'expiry-date';
+      expiryElement.textContent = `Expira: ${new Date(userData.expiryDate).toLocaleDateString()}`;
+      userItem.appendChild(expiryElement);
+    }
+    const actions = document.createElement('div');
+    actions.className = 'user-actions';
+    const editButton = document.createElement('button');
+    editButton.textContent = 'Editar';
+    editButton.onclick = () => editUser(username);
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = 'Eliminar';
+    deleteButton.onclick = () => deleteUser(username);
+    actions.appendChild(editButton);
+    actions.appendChild(deleteButton);
+    userItem.appendChild(actions);
+    container.appendChild(userItem);
+  });
+  if (currentUser === 'luis') {
+    renderUserCredentialsList();
+  }
+}
+function editUser(username) {
+  if (currentUser !== 'luis') return;
+  const newPassword = prompt('Nueva contraseÃ±a para ' + username);
+  const newExpiryDate = prompt('Nueva fecha de expiraciÃ³n (YYYY-MM-DD)');
+  if (newPassword !== null) {
+    users[username].password = newPassword;
+  }
+  if (newExpiryDate !== null) {
+    users[username].expiryDate = newExpiryDate;
+  }
+  updateUserList();
+  syncDataWithDb();
+}
+function deleteUser(username) {
+  if (currentUser !== 'luis' || username === 'luis') return;
+  if (confirm(`Â¿EstÃ¡s seguro de eliminar al usuario ${username}?`)) {
+    delete users[username];
+    updateUserList();
+    syncDataWithDb();
+  }
+}
+function logout() {
+  if (currentUser) {
+    delete deviceSessions[currentUser];
+    localStorage.removeItem('currentDevice');
+  }
+  currentUser = null;
+  document.getElementById('loginForm').style.display = 'block';
+  document.getElementById('videoContainer').style.display = 'none';
+  document.getElementById('playlistContainer').style.display = 'none';
+  document.getElementById('changePasswordContainer').style.display = 'none';
+  document.getElementById('userManagementContainer').style.display = 'none';
+  document.getElementById('databaseConfigContainer').style.display = 'none';
+  document.getElementById('logoutButton').style.display = 'none';
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+  document.getElementById('loginError').textContent = '';
+  const video = document.getElementById('video');
+  video.pause();
+  if (currentHls) {
+    currentHls.destroy();
+    currentHls = null;
+  }
+  streamStatuses = {};
+}
+function updateStreamStatus() {
+  const container = document.getElementById('playlistContainer');
+  let statusContainer = document.querySelector('.stream-status');
+  if (!statusContainer) {
+    statusContainer = document.createElement('div');
+    statusContainer.className = 'stream-status';
+    statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
+    container.appendChild(statusContainer);
+  }
+  const statusContent = document.createElement('div');
+  videoUrls.forEach(item => {
+    const status = streamStatuses[item.url] || {
+      status: 'unknown',
+      message: 'No reproducido aÃºn'
+    };
+    const statusItem = document.createElement('div');
+    statusItem.className = 'status-item';
+    const indicator = document.createElement('div');
+    indicator.className = `status-indicator status-${status.status}`;
+    const details = document.createElement('div');
+    details.className = 'status-details';
+    const name = document.createElement('div');
+    name.className = 'status-name';
+    name.textContent = item.name;
+    const message = document.createElement('div');
+    message.className = 'status-message';
+    message.textContent = status.message;
+    details.appendChild(name);
+    details.appendChild(message);
+    statusItem.appendChild(indicator);
+    statusItem.appendChild(details);
+    statusContent.appendChild(statusItem);
+  });
+  statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
+  statusContainer.appendChild(statusContent);
+}
+async function testConnection() {
+  const errorElement = document.getElementById('dbConfigError');
+  const successElement = document.getElementById('dbConfigSuccess');
+  const statusElement = document.getElementById('dbStatus');
+  try {
+    const response = await fetch('api/test-mysql-connection', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        host: document.getElementById('dbHost').value,
+        database: document.getElementById('dbName').value,
+        user: document.getElementById('dbUser').value,
+        password: document.getElementById('dbPassword').value,
+        port: document.getElementById('dbPort').value || 3306,
+        dialect: 'mysql'
+      })
+    });
+    const data = await response.json();
+    if (data.success) {
+      statusElement.className = 'database-status connected';
+      statusElement.textContent = 'ConexiÃ³n MySQL exitosa';
+      errorElement.textContent = '';
+      successElement.textContent = 'Prueba de conexiÃ³n MySQL exitosa';
+    } else {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    statusElement.className = 'database-status error';
+    statusElement.textContent = 'Error de conexiÃ³n MySQL';
+    errorElement.textContent = `Error: ${error.message}`;
+    successElement.textContent = '';
+  }
+}
+async function saveDbConfig() {
+  const errorElement = document.getElementById('dbConfigError');
+  const successElement = document.getElementById('dbConfigSuccess');
+  try {
+    const config = {
+      host: document.getElementById('dbHost').value,
+      database: document.getElementById('dbName').value,
+      user: document.getElementById('dbUser').value,
+      password: document.getElementById('dbPassword').value,
+      port: document.getElementById('dbPort').value || 3306,
+      dialect: 'mysql'
+    };
+    const response = await fetch('api/save-mysql-config', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(config)
+    });
+    const data = await response.json();
+    if (data.success) {
+      dbConfig = config;
+      successElement.textContent = 'ConfiguraciÃ³n MySQL guardada exitosamente';
+      errorElement.textContent = '';
+      await syncDataWithDb();
+    } else {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    errorElement.textContent = `Error: ${error.message}`;
+    successElement.textContent = '';
+  }
+}
+async function syncDataWithDb() {
+  try {
+    const usersResponse = await fetch('api/sync-mysql-users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        users,
+        dbConfig: {
+          host: dbConfig.host,
+          database: dbConfig.database,
+          user: dbConfig.user,
+          password: dbConfig.password,
+          port: dbConfig.port
         }
-      }
-
-      function updateAdminStreamsList() {
-        const container = document.getElementById('streamsList');
-        container.innerHTML = '';
-        
-        videoUrls.forEach((stream, index) => {
-          const div = document.createElement('div');
-          div.className = 'stream-item';
-          div.innerHTML = `
-            <span>${stream.name}</span>
-            <button class="edit" onclick="editStream(${index})">Editar</button>
-            <button class="delete" onclick="deleteStream(${index})">Eliminar</button>
-          `;
-          container.appendChild(div);
-        });
-      }
-
-      function saveStreams() {
-        localStorage.setItem('videoUrls', JSON.stringify(videoUrls));
-      }
-
-      function loadStreams() {
-        const saved = localStorage.getItem('videoUrls');
-        if (saved) {
-          videoUrls = JSON.parse(saved);
-          updatePlaylist();
+      })
+    });
+    const urlsResponse = await fetch('api/sync-mysql-urls', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        videoUrls,
+        dbConfig: {
+          host: dbConfig.host,
+          database: dbConfig.database,
+          user: dbConfig.user,
+          password: dbConfig.password,
+          port: dbConfig.port
         }
+      })
+    });
+    return usersResponse.ok && urlsResponse.ok;
+  } catch (error) {
+    console.error('Error syncing data with MySQL:', error);
+    return false;
+  }
+}
+function renderUserCredentialsList() {
+  if (currentUser !== 'luis') return;
+  const container = document.getElementById('userManagementContainer');
+  let existingList = document.getElementById('userCredentialsList');
+  if (existingList) {
+    existingList.remove();
+  }
+  const userCredentialsDiv = document.createElement('div');
+  userCredentialsDiv.id = 'userCredentialsList';
+  userCredentialsDiv.innerHTML = '<h3>Credenciales de Usuarios</h3>';
+  const table = document.createElement('table');
+  table.style.width = '100%';
+  table.style.borderCollapse = 'collapse';
+  const headerRow = table.insertRow();
+  ['Usuario', 'ContraseÃ±a'].forEach(header => {
+    const th = document.createElement('th');
+    th.textContent = header;
+    th.style.border = '1px solid #444';
+    th.style.padding = '8px';
+    headerRow.appendChild(th);
+  });
+  Object.entries(users).filter(([username]) => username.startsWith('dn')).forEach(([username, userData]) => {
+    const row = table.insertRow();
+    const usernameCell = row.insertCell();
+    usernameCell.textContent = username;
+    usernameCell.style.border = '1px solid #444';
+    usernameCell.style.padding = '8px';
+    const passwordCell = row.insertCell();
+    passwordCell.textContent = userData.password;
+    passwordCell.style.border = '1px solid #444';
+    passwordCell.style.padding = '8px';
+  });
+  userCredentialsDiv.appendChild(table);
+  container.appendChild(userCredentialsDiv);
+}
+window.addEventListener('storage', e => {
+  if (e.key === 'forceLogout') {
+    const data = JSON.parse(e.newValue);
+    const currentDevice = localStorage.getItem('currentDevice');
+    if (currentDevice) {
+      const deviceData = JSON.parse(currentDevice);
+      if (deviceData.username === data.username && deviceData.deviceId === data.deviceId) {
+        logout();
+        alert('Se ha iniciado sesiÃ³n en otro dispositivo');
       }
-      function handleTouchStart(evt) {
-        const firstTouch = evt.touches[0];
-        window.touchStartY = firstTouch.clientY;
-        window.touchStartX = firstTouch.clientX;
-      }
-
-      function handleTouchMove(evt) {
-        if (!window.touchStartY || !window.touchStartX) {
-          return;
-        }
-
-        const touch = evt.touches[0];
-        const deltaY = window.touchStartY - touch.clientY;
-        const deltaX = window.touchStartX - touch.clientX;
-        
-        const playlistContainer = document.getElementById('playlistContainer');
-        const isPlaylistScrolling = evt.target.closest('#playlistContainer');
-        
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-          if (deltaX > 50) { // Swipe left
-            playlistContainer.classList.add('hidden');
-            playlistVisible = false;
-          } else if (deltaX < -50) { // Swipe right
-            playlistContainer.classList.remove('hidden');
-            playlistVisible = true;
-          }
-          evt.preventDefault();
-        } else if (isPlaylistScrolling) {
-          playlistContainer.scrollTop += deltaY;
-          evt.preventDefault(); 
-        } else {
-          window.scrollBy(0, deltaY);
-        }
-        
-        window.touchStartY = touch.clientY;
-        window.touchStartX = touch.clientX;
-      }
-
-      function handleTouchEnd(event) {
-        window.touchStartY = null;
-        window.touchStartX = null;
-        
-        const clickedPlaylistItem = event.target.closest('.playlist-item');
-        
-        if (clickedPlaylistItem) {
-          const index = Array.from(clickedPlaylistItem.parentNode.children).indexOf(clickedPlaylistItem);
-          const selectedStream = videoUrls[index];
-          
-          // Hide playlist immediately
-          const playlistContainer = document.getElementById('playlistContainer');
-          playlistContainer.classList.add('hidden');
-          
-          // Play the selected stream
-          playUrl(selectedStream.url, selectedStream.type);
-          
-          // Reshow playlist after a delay
-          setTimeout(() => {
-            playlistContainer.classList.remove('hidden');
-          }, 2000);
-        }
-      }
-      document.addEventListener('keydown', function(e) {
-        if ([38, 40].includes(e.keyCode)) { 
-          e.preventDefault();
-        }
-      }, false);
-      document.addEventListener('DOMContentLoaded', () => {
-        loadStreams();
-      });
-      document.addEventListener('DOMContentLoaded', () => {
-        const loginContainer = document.getElementById('loginContainer');
-        const loginType = document.getElementById('loginType');
-        const passwordInput = document.getElementById('passwordInput');
-        const loginButton = document.querySelector('.login-box button');
-
-        // Prevent auto-zoom
-        passwordInput.addEventListener('focus', function() {
-          document.body.style.zoom = 1;
-          loginContainer.style.position = 'fixed';
-          loginContainer.style.top = '0';
-          loginContainer.style.left = '0';
-          loginContainer.style.width = '100%';
-          loginContainer.style.height = '100%';
-        });
-
-        passwordInput.addEventListener('blur', function() {
-          document.body.style.zoom = '';
-          loginContainer.style.position = '';
-          loginContainer.style.top = '';
-          loginContainer.style.left = '';
-          loginContainer.style.width = '';
-          loginContainer.style.height = '';
-        });
-
-        // Add keyboard navigation for mobile
-        loginType.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter') {
-            passwordInput.focus();
-          }
-        });
-
-        passwordInput.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter') {
-            checkPassword();
-          }
-        });
-
-        // Touch and click handling
-        loginButton.addEventListener('touchstart', function(e) {
-          e.preventDefault();
-          this.focus();
-          checkPassword();
-        });
-
-        loginButton.addEventListener('click', function(e) {
-          e.preventDefault();
-          checkPassword();
-        });
-
-        // Disable zoom on inputs
-        passwordInput.addEventListener('touchstart', function(e) {
-          e.preventDefault();
-          this.focus();
-        });
-
-        // Prevent context menu
-        loginContainer.addEventListener('contextmenu', function(e) {
-          e.preventDefault();
-        });
-      });
-    })();
-  </script>
+    }
+  }
+});
+window.addEventListener('load', () => {
+  const currentDevice = localStorage.getItem('currentDevice');
+  if (currentDevice) {
+    const deviceData = JSON.parse(currentDevice);
+    if (!deviceSessions[deviceData.username] || deviceSessions[deviceData.username] !== deviceData.deviceId) {
+      logout();
+    }
+  }
+});</script>
 </body>
 </html>
