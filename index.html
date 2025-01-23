@@ -366,639 +366,659 @@
   </div>
   <button id="logoutButton" class="logout-button" onclick="logout()">Cerrar Sesi&#xf3;n</button>
 
-  <script>let users = {
-  'luis': {
-    password: 'luis',
-    isAdmin: true
-  },
-  ...Object.fromEntries(Array.from({
-    length: 100
-  }, (_, i) => [`dn${i + 1}`, {
-    password: `Cliente${i + 1}`,
-    expiryDate: null
-  }]))
-};
-let currentUser = null;
-let videoUrls = [{
-  name: 'Stream Principal',
-  url: 'https://stream.gia.tv/giatv/giatv-Gary2CanalGary2Canal/Gary2CanalGary2Canal/chunks.m3u8'
-}, {
-  name: 'Win+',
-  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
-}];
-videoUrls.push({
-  name: 'ESPN',
-  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
-}, {
-  name: 'ESPN 2',
-  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
-}, {
-  name: 'ESPN 3',
-  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
-});
-videoUrls.push({
-  name: 'ESPN 4',
-  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
-}, {
-  name: 'ESPN EXTRA',
-  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
-}, {
-  name: 'ESPN Premium',
-  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
-}, {
-  name: 'Directv',
-  url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
-});
-videoUrls.push({
-  name: 'Solo eventos',
-  url: 'https://ab1.dbcast.live/pdg/wW1TgRZmjUobuaBLi9NoaA/616521/d4bd325b83337630/236818/3230302e34312e3131332e38/1737631441.m3u8'
-});
-let currentHls = null;
-let streamStatuses = {};
-let deviceSessions = {};
-let dbConfig = {
-  host: '',
-  database: '',
-  user: '',
-  password: '',
-  port: 3306,
-  dialect: 'mysql'
-};
-function generateDeviceId() {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
-}
-function login() {
-  const username = document.getElementById('username').value;
-  const password = document.getElementById('password').value;
-  const errorElement = document.getElementById('loginError');
-  if (users[username] && users[username].password === password) {
-    if (users[username].expiryDate && new Date(users[username].expiryDate) < new Date()) {
-      errorElement.textContent = 'Tu cuenta ha expirado';
+  <script>
+  let users = {  
+    'luis': {
+      password: 'luis', 
+      isAdmin: true
+    },
+    '1': {
+      password: '1',
+      isAdmin: false
+    }
+  };
+  let currentUser = null;
+  let videoUrls = [{
+    name: 'Stream Principal',
+    url: 'https://stream.gia.tv/giatv/giatv-Gary2CanalGary2Canal/Gary2CanalGary2Canal/chunks.m3u8'
+  }, {
+    name: 'Win+',
+    url: 'https://cbado.pricesaskeloadsc.com/winplus2/mono.m3u8?md5=_vDRrprGqFNj7lV2u1x9Zg&expires=1737687389'
+  }];
+  videoUrls.push({
+    name: 'ESPN',
+    url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+  }, {
+    name: 'ESPN 2',
+    url: 'https://dglvz29s.fubohd.com/espn2/tracks-v1a1/mono.m3u8?token=922d4289e5897536ea63e8451e976b26f6b5a614-09-1737687500-1737651500'
+  }, {
+    name: 'ESPN 3',
+    url: 'https://yxdlc29tzq.fubohd.com/espn3/tracks-v1a1/mono.m3u8?token=88b0d0f1857750cdd675143cdbe38b70ef7f3546-7c-1737687550-1737651550'
+  });
+  videoUrls.push({
+    name: 'ESPN 4',
+    url: 'https://d2hpc3rszq.fubohd.com/espn4/tracks-v1a1/mono.m3u8?token=7e596cd774ad7a063c15252d13b324b9703856a2-e8-1737687648-1737651648'
+  }, {
+    name: 'ESPN EXTRA',
+    url: 'https://am91cm5leq.fubohd.com/espn5/tracks-v1a1/mono.m3u8?token=c5bd09a2d5d0b3c24639d45110346b82bec20bc3-a7-1737687690-1737651690'
+  }, {
+    name: 'ESPN Premium',
+    url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
+  }, {
+    name: 'Directv',
+    url: 'https://jf2.naqsheala.com:999/hls/directsp.m3u8?md5=S1zdNKRTyg_rg94qpoBFeg&expires=1737663023'
+  });
+  videoUrls.push({
+    name: 'Solo eventos',
+    url: 'https://jf2.naqsheala.com:999/hls/directsp.m3u8?md5=_eQWBzjGyConBjOd433B3w&expires=1737660255'
+  });
+
+  let currentHls = null;
+  let streamStatuses = {};
+  let deviceSessions = {};
+  let dbConfig = {
+    host: '',
+    database: '',
+    user: '',
+    password: '',
+    port: 3306,
+    dialect: 'mysql'
+  };
+  function generateDeviceId() {
+    return Math.random().toString(36).substring(2) + Date.now().toString(36);
+  }
+  function login() {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const errorElement = document.getElementById('loginError');
+    if (users[username] && users[username].password === password) {
+      if (users[username].expiryDate && new Date(users[username].expiryDate) < new Date()) {
+        errorElement.textContent = 'Tu cuenta ha expirado';
+        return;
+      }
+      const deviceId = generateDeviceId();
+      if (deviceSessions[username]) {
+        const oldDeviceId = deviceSessions[username];
+        localStorage.setItem('forceLogout', JSON.stringify({
+          username: username,
+          deviceId: oldDeviceId,
+          timestamp: Date.now()
+        }));
+      }
+      deviceSessions[username] = deviceId;
+      localStorage.setItem('currentDevice', JSON.stringify({
+        username: username,
+        deviceId: deviceId
+      }));
+      currentUser = username;
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('videoContainer').style.display = 'block';
+      document.getElementById('playlistContainer').style.display = 'block';
+      if (username === 'luis') {
+        document.getElementById('changePasswordContainer').style.display = 'block';
+        document.getElementById('addUrlContainer').style.display = 'grid';
+        document.getElementById('userManagementContainer').style.display = 'block';
+        document.getElementById('databaseConfigContainer').style.display = 'block';
+        renderUserCredentialsList();
+      } else {
+        document.getElementById('addUrlContainer').style.display = 'none';
+      }
+      document.getElementById('logoutButton').style.display = 'block';
+      initializeVideo();
+      updatePlaylist();
+      if (username === 'luis') {
+        updateUserList();
+      }
+    } else {
+      errorElement.textContent = 'Usuario o contraseña incorrectos';
+    }
+  }
+  function changePassword() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const errorElement = document.getElementById('passwordChangeError');
+    const successElement = document.getElementById('passwordChangeSuccess');
+    errorElement.textContent = '';
+    successElement.textContent = '';
+    if (currentPassword !== users[currentUser].password) {
+      errorElement.textContent = 'La contraseña actual es incorrecta';
       return;
     }
-    const deviceId = generateDeviceId();
-    if (deviceSessions[username]) {
-      const oldDeviceId = deviceSessions[username];
-      localStorage.setItem('forceLogout', JSON.stringify({
-        username: username,
-        deviceId: oldDeviceId,
-        timestamp: Date.now()
-      }));
+    if (newPassword !== confirmPassword) {
+      errorElement.textContent = 'Las nuevas contraseñas no coinciden';
+      return;
     }
-    deviceSessions[username] = deviceId;
-    localStorage.setItem('currentDevice', JSON.stringify({
-      username: username,
-      deviceId: deviceId
-    }));
-    currentUser = username;
-    document.getElementById('loginForm').style.display = 'none';
-    document.getElementById('videoContainer').style.display = 'block';
-    document.getElementById('playlistContainer').style.display = 'block';
-    if (username === 'luis') {
-      document.getElementById('changePasswordContainer').style.display = 'block';
-      document.getElementById('addUrlContainer').style.display = 'grid';
-      document.getElementById('userManagementContainer').style.display = 'block';
-      document.getElementById('databaseConfigContainer').style.display = 'block';
-      renderUserCredentialsList();
-    } else {
-      document.getElementById('addUrlContainer').style.display = 'none';
+    if (newPassword.length < 1) {
+      errorElement.textContent = 'La nueva contraseña no puede estar vacía';
+      return;
     }
-    document.getElementById('logoutButton').style.display = 'block';
-    initializeVideo();
-    updatePlaylist();
-    if (username === 'luis') {
-      updateUserList();
+    users[currentUser].password = newPassword;
+    successElement.textContent = 'Contraseña cambiada exitosamente';
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+  }
+  function addUrl() {
+    const newName = document.getElementById('streamName').value.trim();
+    const newUrl = document.getElementById('newUrl').value.trim();
+    if (newUrl && newName && currentUser === 'luis') {
+      videoUrls.push({
+        name: newName,
+        url: newUrl
+      });
+      updatePlaylist();
+      syncDataWithDb();
+      document.getElementById('newUrl').value = '';
+      document.getElementById('streamName').value = '';
     }
-  } else {
-    errorElement.textContent = 'Usuario o contraseÃ±a incorrectos';
   }
-}
-function changePassword() {
-  const currentPassword = document.getElementById('currentPassword').value;
-  const newPassword = document.getElementById('newPassword').value;
-  const confirmPassword = document.getElementById('confirmPassword').value;
-  const errorElement = document.getElementById('passwordChangeError');
-  const successElement = document.getElementById('passwordChangeSuccess');
-  errorElement.textContent = '';
-  successElement.textContent = '';
-  if (currentPassword !== users[currentUser].password) {
-    errorElement.textContent = 'La contraseÃ±a actual es incorrecta';
-    return;
+  function removeUrl(index) {
+    if (currentUser === 'luis') {
+      videoUrls.splice(index, 1);
+      syncDataWithDb();
+      updatePlaylist();
+    }
   }
-  if (newPassword !== confirmPassword) {
-    errorElement.textContent = 'Las nuevas contraseÃ±as no coinciden';
-    return;
-  }
-  if (newPassword.length < 1) {
-    errorElement.textContent = 'La nueva contraseÃ±a no puede estar vacÃ­a';
-    return;
-  }
-  users[currentUser].password = newPassword;
-  successElement.textContent = 'ContraseÃ±a cambiada exitosamente';
-  document.getElementById('currentPassword').value = '';
-  document.getElementById('newPassword').value = '';
-  document.getElementById('confirmPassword').value = '';
-}
-function addUrl() {
-  const newName = document.getElementById('streamName').value.trim();
-  const newUrl = document.getElementById('newUrl').value.trim();
-  if (newUrl && newName && currentUser === 'luis') {
-    videoUrls.push({
-      name: newName,
-      url: newUrl
-    });
-    updatePlaylist();
-    syncDataWithDb();
-    document.getElementById('newUrl').value = '';
-    document.getElementById('streamName').value = '';
-  }
-}
-function removeUrl(index) {
-  if (currentUser === 'luis') {
-    videoUrls.splice(index, 1);
-    syncDataWithDb();
-    updatePlaylist();
-  }
-}
-function playUrl(url) {
-  if (currentHls) {
-    currentHls.destroy();
-  }
-  const video = document.getElementById('video');
-  const qualitySelect = document.getElementById('quality');
-  qualitySelect.innerHTML = '<option value="">Calidad Auto</option>';
-  if (Hls.isSupported()) {
-    currentHls = new Hls();
-    currentHls.loadSource(url);
-    currentHls.attachMedia(video);
-    currentHls.on(Hls.Events.ERROR, function (event, data) {
-      const streamIndex = videoUrls.findIndex(item => item.url === url);
-      if (streamIndex !== -1) {
-        streamStatuses[url] = {
-          status: 'error',
-          message: `Error: ${data.type} - ${data.details}`
-        };
-        updateStreamStatus();
-      }
-    });
-    currentHls.on(Hls.Events.FRAG_LOADED, function (event, data) {
-      const loadTime = data.stats.loading.end - data.stats.loading.start;
-      const streamIndex = videoUrls.findIndex(item => item.url === url);
-      if (streamIndex !== -1) {
-        if (loadTime > 2000) {
+  function playUrl(url) {
+    if (currentHls) {
+      currentHls.destroy();
+    }
+    const video = document.getElementById('video');
+    const qualitySelect = document.getElementById('quality');
+    qualitySelect.innerHTML = '<option value="">Calidad Auto</option>';
+    
+    if (Hls.isSupported()) {
+      const config = {
+        enableWorker: true,
+        maxBufferLength: 60, // Incrementado de 30 a 60 segundos
+        maxMaxBufferLength: 600, // Incrementado de 600 a 1200 segundos
+        maxBufferSize: 600000000, // Incrementado el tamaño máximo del buffer
+        maxBufferHole: 0.5, // Reducido para una recuperación más rápida
+        highBufferWatchdogPeriod: 2, // Reducido para cambiar calidades más rápido
+        abrEwmaDefaultEstimate: 500000, // Incrementado para favorecer bitrates más altos
+        abrBandWidthFactor: 0.95, // Incrementado para usar más ancho de banda disponible
+        abrBandWidthUpFactor: 0.7, // Ajustado para cambiar a calidades superiores más rápido
+        abrMaxWithRealBitrate: true, // Usar bitrate real para decisiones
+        maxStarvationDelay: 4, // Incrementado para permitir más tiempo de buffering
+        maxLoadingDelay: 4, // Incrementado para permitir más tiempo de carga
+        lowLatencyMode: false, // Desactivado para priorizar buffering sobre latencia
+        backBufferLength: 90 // Incrementado el buffer hacia atrás
+      };
+
+      currentHls = new Hls(config);
+      currentHls.loadSource(url);
+      currentHls.attachMedia(video);
+      
+      currentHls.on(Hls.Events.ERROR, function (event, data) {
+        const streamIndex = videoUrls.findIndex(item => item.url === url);
+        if (streamIndex !== -1) {
           streamStatuses[url] = {
-            status: 'slow',
-            message: 'ReproducciÃ³n lenta - Alta latencia'
+            status: 'error',
+            message: `Error: ${data.type} - ${data.details}`
           };
-        } else {
-          streamStatuses[url] = {
-            status: 'good',
-            message: 'ReproducciÃ³n estable'
-          };
+          updateStreamStatus();
         }
-        updateStreamStatus();
+      });
+      currentHls.on(Hls.Events.FRAG_LOADED, function (event, data) {
+        const loadTime = data.stats.loading.end - data.stats.loading.start;
+        const streamIndex = videoUrls.findIndex(item => item.url === url);
+        if (streamIndex !== -1) {
+          if (loadTime > 2000) {
+            streamStatuses[url] = {
+              status: 'slow',
+              message: 'Reproducción lenta - Alta latencia'
+            };
+          } else {
+            streamStatuses[url] = {
+              status: 'good',
+              message: 'Reproducción estable'
+            };
+          }
+          updateStreamStatus();
+        }
+      });
+      currentHls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+        const qualities = data.levels.map((level, index) => ({
+          index: index,
+          resolution: `${level.width}x${level.height}`,
+          bitrate: level.bitrate
+        }));
+        qualities.forEach(quality => {
+          const option = document.createElement('option');
+          option.value = quality.index;
+          option.text = `${quality.resolution} (${Math.round(quality.bitrate / 1000)} kbps)`;
+          qualitySelect.appendChild(option);
+        });
+        video.play();
+      });
+    }
+  }
+  function updatePlaylist() {
+    const container = document.getElementById('playlistItems');
+    container.innerHTML = '';
+    videoUrls.forEach((item, index) => {
+      const playlistItem = document.createElement('div');
+      playlistItem.className = 'playlist-item';
+      const playButton = document.createElement('button');
+      playButton.textContent = 'Reproducir';
+      playButton.onclick = () => {
+        playUrl(item.url);
+      };
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'playlist-name';
+      nameSpan.textContent = item.name;
+      playlistItem.appendChild(playButton);
+      playlistItem.appendChild(nameSpan);
+      if (currentUser === 'luis') {
+        const urlText = document.createElement('span');
+        urlText.textContent = item.url;
+        playlistItem.appendChild(urlText);
       }
+      if (currentUser === 'luis') {
+        const removeButton = document.createElement('button');
+        removeButton.textContent = 'Eliminar';
+        removeButton.onclick = () => removeUrl(index);
+        playlistItem.appendChild(removeButton);
+      }
+      container.appendChild(playlistItem);
     });
+    updateStreamStatus();
+  }
+  function initializeVideo() {
+    const video = document.getElementById('video');
+    const playPauseBtn = document.getElementById('playPause');
+    const qualitySelect = document.getElementById('quality');
+    const fullscreenBtn = document.getElementById('fullscreen');
+    playUrl(videoUrls[0].url);
     currentHls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
-      const qualities = data.levels.map((level, index) => ({
-        index: index,
-        resolution: `${level.width}x${level.height}`,
-        bitrate: level.bitrate
-      }));
-      qualities.forEach(quality => {
-        const option = document.createElement('option');
-        option.value = quality.index;
-        option.text = `${quality.resolution} (${Math.round(quality.bitrate / 1000)} kbps)`;
-        qualitySelect.appendChild(option);
+      const qualities = [{
+        index: 0,
+        resolution: '144p',
+        height: 144
+      }, {
+        index: 1,
+        resolution: '240p',
+        height: 240
+      }, {
+        index: 2,
+        resolution: '360p',
+        height: 360
+      }, {
+        index: 3,
+        resolution: '480p',
+        height: 480
+      }];
+      qualitySelect.innerHTML = '<option value="">Calidad Auto</option>';
+      data.levels.forEach(level => {
+        const matchingQuality = qualities.find(q => Math.abs(level.height - q.height) <= 50);
+        if (matchingQuality) {
+          const option = document.createElement('option');
+          option.value = level.index;
+          option.text = matchingQuality.resolution;
+          qualitySelect.appendChild(option);
+        }
       });
       video.play();
     });
-  }
-}
-function updatePlaylist() {
-  const container = document.getElementById('playlistItems');
-  container.innerHTML = '';
-  videoUrls.forEach((item, index) => {
-    const playlistItem = document.createElement('div');
-    playlistItem.className = 'playlist-item';
-    const playButton = document.createElement('button');
-    playButton.textContent = 'Reproducir';
-    playButton.onclick = () => {
-      playUrl(item.url);
-    };
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'playlist-name';
-    nameSpan.textContent = item.name;
-    playlistItem.appendChild(playButton);
-    playlistItem.appendChild(nameSpan);
-    if (currentUser === 'luis') {
-      const urlText = document.createElement('span');
-      urlText.textContent = item.url;
-      playlistItem.appendChild(urlText);
-    }
-    if (currentUser === 'luis') {
-      const removeButton = document.createElement('button');
-      removeButton.textContent = 'Eliminar';
-      removeButton.onclick = () => removeUrl(index);
-      playlistItem.appendChild(removeButton);
-    }
-    container.appendChild(playlistItem);
-  });
-  updateStreamStatus();
-}
-function initializeVideo() {
-  const video = document.getElementById('video');
-  const playPauseBtn = document.getElementById('playPause');
-  const qualitySelect = document.getElementById('quality');
-  const fullscreenBtn = document.getElementById('fullscreen');
-  playUrl(videoUrls[0].url);
-  currentHls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
-    const qualities = [{
-      index: 0,
-      resolution: '144p',
-      height: 144
-    }, {
-      index: 1,
-      resolution: '240p',
-      height: 240
-    }, {
-      index: 2,
-      resolution: '360p',
-      height: 360
-    }, {
-      index: 3,
-      resolution: '480p',
-      height: 480
-    }];
-    qualitySelect.innerHTML = '<option value="">Calidad Auto</option>';
-    data.levels.forEach(level => {
-      const matchingQuality = qualities.find(q => Math.abs(level.height - q.height) <= 50);
-      if (matchingQuality) {
-        const option = document.createElement('option');
-        option.value = level.index;
-        option.text = matchingQuality.resolution;
-        qualitySelect.appendChild(option);
+    playPauseBtn.addEventListener('click', function () {
+      if (video.paused) {
+        video.play();
+      } else {
+        video.pause();
       }
     });
-    video.play();
-  });
-  playPauseBtn.addEventListener('click', function () {
-    if (video.paused) {
-      video.play();
-    } else {
-      video.pause();
-    }
-  });
-  fullscreenBtn.addEventListener('click', function () {
-    if (!document.fullscreenElement) {
-      if (video.requestFullscreen) {
-        video.requestFullscreen();
-      } else if (video.webkitRequestFullscreen) {
-        video.webkitRequestFullscreen();
-      } else if (video.msRequestFullscreen) {
-        video.msRequestFullscreen();
-      }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-      }
-    }
-  });
-  video.addEventListener('play', () => {
-    playPauseBtn.textContent = 'Pause';
-  });
-  video.addEventListener('pause', () => {
-    playPauseBtn.textContent = 'Play';
-  });
-  qualitySelect.addEventListener('change', function () {
-    if (currentHls) {
-      if (this.value === '') {
-        currentHls.currentLevel = -1;
+    fullscreenBtn.addEventListener('click', function () {
+      if (!document.fullscreenElement) {
+        if (video.requestFullscreen) {
+          video.requestFullscreen();
+        } else if (video.webkitRequestFullscreen) {
+          video.webkitRequestFullscreen();
+        } else if (video.msRequestFullscreen) {
+          video.msRequestFullscreen();
+        }
       } else {
-        const selectedLevel = Number(this.value);
-        currentHls.currentLevel = selectedLevel;
-        console.log(`Selected quality: ${currentHls.levels[selectedLevel].height}p`);
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
       }
+    });
+    video.addEventListener('play', () => {
+      playPauseBtn.textContent = 'Pause';
+    });
+    video.addEventListener('pause', () => {
+      playPauseBtn.textContent = 'Play';
+    });
+    qualitySelect.addEventListener('change', function () {
+      if (currentHls) {
+        if (this.value === '') {
+          currentHls.currentLevel = -1;
+        } else {
+          const selectedLevel = Number(this.value);
+          currentHls.currentLevel = selectedLevel;
+          console.log(`Selected quality: ${currentHls.levels[selectedLevel].height}p`);
+        }
+      }
+    });
+  }
+  function createUser() {
+    if (currentUser !== 'luis') return;
+    const username = document.getElementById('newUsername').value.trim();
+    const password = document.getElementById('newUserPassword').value;
+    const expiryDate = document.getElementById('expiryDate').value;
+    const errorElement = document.getElementById('userManagementError');
+    const successElement = document.getElementById('userManagementSuccess');
+    errorElement.textContent = '';
+    successElement.textContent = '';
+    if (!username || !password) {
+      errorElement.textContent = 'Usuario y contraseña son requeridos';
+      return;
     }
-  });
-}
-function createUser() {
-  if (currentUser !== 'luis') return;
-  const username = document.getElementById('newUsername').value.trim();
-  const password = document.getElementById('newUserPassword').value;
-  const expiryDate = document.getElementById('expiryDate').value;
-  const errorElement = document.getElementById('userManagementError');
-  const successElement = document.getElementById('userManagementSuccess');
-  errorElement.textContent = '';
-  successElement.textContent = '';
-  if (!username || !password) {
-    errorElement.textContent = 'Usuario y contraseÃ±a son requeridos';
-    return;
-  }
-  if (users[username]) {
-    errorElement.textContent = 'El usuario ya existe';
-    return;
-  }
-  users[username] = {
-    password: password,
-    expiryDate: expiryDate || null
-  };
-  successElement.textContent = 'Usuario creado exitosamente';
-  document.getElementById('newUsername').value = '';
-  document.getElementById('newUserPassword').value = '';
-  document.getElementById('expiryDate').value = '';
-  updateUserList();
-  syncDataWithDb();
-}
-function updateUserList() {
-  if (currentUser !== 'luis') {
-    const existingList = document.getElementById('userCredentialsList');
-    if (existingList) {
-      existingList.remove();
+    if (users[username]) {
+      errorElement.textContent = 'El usuario ya existe';
+      return;
     }
-    return;
-  }
-  const container = document.getElementById('userList');
-  container.innerHTML = '';
-  Object.entries(users).forEach(([username, userData]) => {
-    if (username === 'luis') return;
-    const userItem = document.createElement('div');
-    userItem.className = 'user-item';
-    const nameElement = document.createElement('div');
-    nameElement.textContent = `Usuario: ${username}`;
-    userItem.appendChild(nameElement);
-    if (userData.expiryDate) {
-      const expiryElement = document.createElement('div');
-      expiryElement.className = 'expiry-date';
-      expiryElement.textContent = `Expira: ${new Date(userData.expiryDate).toLocaleDateString()}`;
-      userItem.appendChild(expiryElement);
-    }
-    const actions = document.createElement('div');
-    actions.className = 'user-actions';
-    const editButton = document.createElement('button');
-    editButton.textContent = 'Editar';
-    editButton.onclick = () => editUser(username);
-    const deleteButton = document.createElement('button');
-    deleteButton.textContent = 'Eliminar';
-    deleteButton.onclick = () => deleteUser(username);
-    actions.appendChild(editButton);
-    actions.appendChild(deleteButton);
-    userItem.appendChild(actions);
-    container.appendChild(userItem);
-  });
-  if (currentUser === 'luis') {
-    renderUserCredentialsList();
-  }
-}
-function editUser(username) {
-  if (currentUser !== 'luis') return;
-  const newPassword = prompt('Nueva contraseÃ±a para ' + username);
-  const newExpiryDate = prompt('Nueva fecha de expiraciÃ³n (YYYY-MM-DD)');
-  if (newPassword !== null) {
-    users[username].password = newPassword;
-  }
-  if (newExpiryDate !== null) {
-    users[username].expiryDate = newExpiryDate;
-  }
-  updateUserList();
-  syncDataWithDb();
-}
-function deleteUser(username) {
-  if (currentUser !== 'luis' || username === 'luis') return;
-  if (confirm(`Â¿EstÃ¡s seguro de eliminar al usuario ${username}?`)) {
-    delete users[username];
+    users[username] = {
+      password: password,
+      expiryDate: expiryDate || null
+    };
+    successElement.textContent = 'Usuario creado exitosamente';
+    document.getElementById('newUsername').value = '';
+    document.getElementById('newUserPassword').value = '';
+    document.getElementById('expiryDate').value = '';
     updateUserList();
     syncDataWithDb();
   }
-}
-function logout() {
-  if (currentUser) {
-    delete deviceSessions[currentUser];
-    localStorage.removeItem('currentDevice');
+  function updateUserList() {
+    if (currentUser !== 'luis') {
+      const existingList = document.getElementById('userCredentialsList');
+      if (existingList) {
+        existingList.remove();
+      }
+      return;
+    }
+    const container = document.getElementById('userList');
+    container.innerHTML = '';
+    Object.entries(users).forEach(([username, userData]) => {
+      if (username === 'luis') return;
+      const userItem = document.createElement('div');
+      userItem.className = 'user-item';
+      const nameElement = document.createElement('div');
+      nameElement.textContent = `Usuario: ${username}`;
+      userItem.appendChild(nameElement);
+      if (userData.expiryDate) {
+        const expiryElement = document.createElement('div');
+        expiryElement.className = 'expiry-date';
+        expiryElement.textContent = `Expira: ${new Date(userData.expiryDate).toLocaleDateString()}`;
+        userItem.appendChild(expiryElement);
+      }
+      const actions = document.createElement('div');
+      actions.className = 'user-actions';
+      const editButton = document.createElement('button');
+      editButton.textContent = 'Editar';
+      editButton.onclick = () => editUser(username);
+      const deleteButton = document.createElement('button');
+      deleteButton.textContent = 'Eliminar';
+      deleteButton.onclick = () => deleteUser(username);
+      actions.appendChild(editButton);
+      actions.appendChild(deleteButton);
+      userItem.appendChild(actions);
+      container.appendChild(userItem);
+    });
+    if (currentUser === 'luis') {
+      renderUserCredentialsList();
+    }
   }
-  currentUser = null;
-  document.getElementById('loginForm').style.display = 'block';
-  document.getElementById('videoContainer').style.display = 'none';
-  document.getElementById('playlistContainer').style.display = 'none';
-  document.getElementById('changePasswordContainer').style.display = 'none';
-  document.getElementById('userManagementContainer').style.display = 'none';
-  document.getElementById('databaseConfigContainer').style.display = 'none';
-  document.getElementById('logoutButton').style.display = 'none';
-  document.getElementById('username').value = '';
-  document.getElementById('password').value = '';
-  document.getElementById('loginError').textContent = '';
-  const video = document.getElementById('video');
-  video.pause();
-  if (currentHls) {
-    currentHls.destroy();
-    currentHls = null;
+  function editUser(username) {
+    if (currentUser !== 'luis') return;
+    const newPassword = prompt('Nueva contraseña para ' + username);
+    const newExpiryDate = prompt('Nueva fecha de expiración (YYYY-MM-DD)');
+    if (newPassword !== null) {
+      users[username].password = newPassword;
+    }
+    if (newExpiryDate !== null) {
+      users[username].expiryDate = newExpiryDate;
+    }
+    updateUserList();
+    syncDataWithDb();
   }
-  streamStatuses = {};
-}
-function updateStreamStatus() {
-  const container = document.getElementById('playlistContainer');
-  let statusContainer = document.querySelector('.stream-status');
-  if (!statusContainer) {
-    statusContainer = document.createElement('div');
-    statusContainer.className = 'stream-status';
+  function deleteUser(username) {
+    if (currentUser !== 'luis' || username === 'luis') return;
+    if (confirm(`¿Estás seguro de eliminar al usuario ${username}?`)) {
+      delete users[username];
+      updateUserList();
+      syncDataWithDb();
+    }
+  }
+  function logout() {
+    if (currentUser) {
+      delete deviceSessions[currentUser];
+      localStorage.removeItem('currentDevice');
+    }
+    currentUser = null;
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('videoContainer').style.display = 'none';
+    document.getElementById('playlistContainer').style.display = 'none';
+    document.getElementById('changePasswordContainer').style.display = 'none';
+    document.getElementById('userManagementContainer').style.display = 'none';
+    document.getElementById('databaseConfigContainer').style.display = 'none';
+    document.getElementById('logoutButton').style.display = 'none';
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('loginError').textContent = '';
+    const video = document.getElementById('video');
+    video.pause();
+    if (currentHls) {
+      currentHls.destroy();
+      currentHls = null;
+    }
+    streamStatuses = {};
+  }
+  function updateStreamStatus() {
+    const container = document.getElementById('playlistContainer');
+    let statusContainer = document.querySelector('.stream-status');
+    if (!statusContainer) {
+      statusContainer = document.createElement('div');
+      statusContainer.className = 'stream-status';
+      statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
+      container.appendChild(statusContainer);
+    }
+    const statusContent = document.createElement('div');
+    videoUrls.forEach(item => {
+      const status = streamStatuses[item.url] || {
+        status: 'unknown',
+        message: 'No reproducido aún'
+      };
+      const statusItem = document.createElement('div');
+      statusItem.className = 'status-item';
+      const indicator = document.createElement('div');
+      indicator.className = `status-indicator status-${status.status}`;
+      const details = document.createElement('div');
+      details.className = 'status-details';
+      const name = document.createElement('div');
+      name.className = 'status-name';
+      name.textContent = item.name;
+      const message = document.createElement('div');
+      message.className = 'status-message';
+      message.textContent = status.message;
+      details.appendChild(name);
+      details.appendChild(message);
+      statusItem.appendChild(indicator);
+      statusItem.appendChild(details);
+      statusContent.appendChild(statusItem);
+    });
     statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
-    container.appendChild(statusContainer);
+    statusContainer.appendChild(statusContent);
   }
-  const statusContent = document.createElement('div');
-  videoUrls.forEach(item => {
-    const status = streamStatuses[item.url] || {
-      status: 'unknown',
-      message: 'No reproducido aÃºn'
-    };
-    const statusItem = document.createElement('div');
-    statusItem.className = 'status-item';
-    const indicator = document.createElement('div');
-    indicator.className = `status-indicator status-${status.status}`;
-    const details = document.createElement('div');
-    details.className = 'status-details';
-    const name = document.createElement('div');
-    name.className = 'status-name';
-    name.textContent = item.name;
-    const message = document.createElement('div');
-    message.className = 'status-message';
-    message.textContent = status.message;
-    details.appendChild(name);
-    details.appendChild(message);
-    statusItem.appendChild(indicator);
-    statusItem.appendChild(details);
-    statusContent.appendChild(statusItem);
-  });
-  statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
-  statusContainer.appendChild(statusContent);
-}
-async function testConnection() {
-  const errorElement = document.getElementById('dbConfigError');
-  const successElement = document.getElementById('dbConfigSuccess');
-  const statusElement = document.getElementById('dbStatus');
-  try {
-    const response = await fetch('api/test-mysql-connection', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
+  async function testConnection() {
+    const errorElement = document.getElementById('dbConfigError');
+    const successElement = document.getElementById('dbConfigSuccess');
+    const statusElement = document.getElementById('dbStatus');
+    try {
+      const response = await fetch('api!//test-mysql-connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          host: document.getElementById('dbHost').value,
+          database: document.getElementById('dbName').value,
+          user: document.getElementById('dbUser').value,
+          password: document.getElementById('dbPassword').value,
+          port: document.getElementById('dbPort').value || 3306,
+          dialect: 'mysql'
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        statusElement.className = 'database-status connected';
+        statusElement.textContent = 'Conexión MySQL exitosa';
+        errorElement.textContent = '';
+        successElement.textContent = 'Prueba de conexión MySQL exitosa';
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      statusElement.className = 'database-status error';
+      statusElement.textContent = 'Error de conexión MySQL';
+      errorElement.textContent = `Error: ${error.message}`;
+      successElement.textContent = '';
+    }
+  }
+  async function saveDbConfig() {
+    const errorElement = document.getElementById('dbConfigError');
+    const successElement = document.getElementById('dbConfigSuccess');
+    try {
+      const config = {
         host: document.getElementById('dbHost').value,
         database: document.getElementById('dbName').value,
         user: document.getElementById('dbUser').value,
         password: document.getElementById('dbPassword').value,
         port: document.getElementById('dbPort').value || 3306,
         dialect: 'mysql'
-      })
-    });
-    const data = await response.json();
-    if (data.success) {
-      statusElement.className = 'database-status connected';
-      statusElement.textContent = 'ConexiÃ³n MySQL exitosa';
-      errorElement.textContent = '';
-      successElement.textContent = 'Prueba de conexiÃ³n MySQL exitosa';
-    } else {
-      throw new Error(data.error);
+      };
+      const response = await fetch('api/save-mysql-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(config)
+      });
+      const data = await response.json();
+      if (data.success) {
+        dbConfig = config;
+        successElement.textContent = 'Configuración MySQL guardada exitosamente';
+        errorElement.textContent = '';
+        await syncDataWithDb();
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      errorElement.textContent = `Error: ${error.message}`;
+      successElement.textContent = '';
     }
-  } catch (error) {
-    statusElement.className = 'database-status error';
-    statusElement.textContent = 'Error de conexiÃ³n MySQL';
-    errorElement.textContent = `Error: ${error.message}`;
-    successElement.textContent = '';
   }
-}
-async function saveDbConfig() {
-  const errorElement = document.getElementById('dbConfigError');
-  const successElement = document.getElementById('dbConfigSuccess');
-  try {
-    const config = {
-      host: document.getElementById('dbHost').value,
-      database: document.getElementById('dbName').value,
-      user: document.getElementById('dbUser').value,
-      password: document.getElementById('dbPassword').value,
-      port: document.getElementById('dbPort').value || 3306,
-      dialect: 'mysql'
-    };
-    const response = await fetch('api/save-mysql-config', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(config)
-    });
-    const data = await response.json();
-    if (data.success) {
-      dbConfig = config;
-      successElement.textContent = 'ConfiguraciÃ³n MySQL guardada exitosamente';
-      errorElement.textContent = '';
-      await syncDataWithDb();
-    } else {
-      throw new Error(data.error);
+  async function syncDataWithDb() {
+    try {
+      const usersResponse = await fetch('api/sync-mysql-users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          users,
+          dbConfig: {
+            host: document.getElementById('dbHost').value,
+            database: document.getElementById('dbName').value,
+            user: document.getElementById('dbUser').value,
+            password: document.getElementById('dbPassword').value,
+            port: document.getElementById('dbPort').value || 3306
+          }
+        })
+      });
+      const urlsResponse = await fetch('api/sync-mysql-urls', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          videoUrls,
+          dbConfig: {
+            host: document.getElementById('dbHost').value,
+            database: document.getElementById('dbName').value,
+            user: document.getElementById('dbUser').value,
+            password: document.getElementById('dbPassword').value,
+            port: document.getElementById('dbPort').value || 3306
+          }
+        })
+      });
+      return usersResponse.ok && urlsResponse.ok;
+    } catch (error) {
+      console.error('Error syncing data with MySQL:', error);
+      return false;
     }
-  } catch (error) {
-    errorElement.textContent = `Error: ${error.message}`;
-    successElement.textContent = '';
   }
-}
-async function syncDataWithDb() {
-  try {
-    const usersResponse = await fetch('api/sync-mysql-users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        users,
-        dbConfig: {
-          host: dbConfig.host,
-          database: dbConfig.database,
-          user: dbConfig.user,
-          password: dbConfig.password,
-          port: dbConfig.port
-        }
-      })
+  function renderUserCredentialsList() {
+    if (currentUser !== 'luis') return;
+    const container = document.getElementById('userManagementContainer');
+    let existingList = document.getElementById('userCredentialsList');
+    if (existingList) {
+      existingList.remove();
+    }
+    const userCredentialsDiv = document.createElement('div');
+    userCredentialsDiv.id = 'userCredentialsList';
+    userCredentialsDiv.innerHTML = '<h3>Credenciales de Usuarios</h3>';
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    const headerRow = table.insertRow();
+    ['Usuario', 'Contraseña'].forEach(header => {
+      const th = document.createElement('th');
+      th.textContent = header;
+      th.style.border = '1px solid #444';
+      th.style.padding = '8px';
+      headerRow.appendChild(th);
     });
-    const urlsResponse = await fetch('api/sync-mysql-urls', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        videoUrls,
-        dbConfig: {
-          host: dbConfig.host,
-          database: dbConfig.database,
-          user: dbConfig.user,
-          password: dbConfig.password,
-          port: dbConfig.port
-        }
-      })
+    Object.entries(users).filter(([username]) => username.startsWith('dn')).forEach(([username, userData]) => {
+      const row = table.insertRow();
+      const usernameCell = row.insertCell();
+      usernameCell.textContent = username;
+      usernameCell.style.border = '1px solid #444';
+      usernameCell.style.padding = '8px';
+      const passwordCell = row.insertCell();
+      passwordCell.textContent = userData.password;
+      passwordCell.style.border = '1px solid #444';
+      passwordCell.style.padding = '8px';
     });
-    return usersResponse.ok && urlsResponse.ok;
-  } catch (error) {
-    console.error('Error syncing data with MySQL:', error);
-    return false;
+    userCredentialsDiv.appendChild(table);
+    container.appendChild(userCredentialsDiv);
   }
-}
-function renderUserCredentialsList() {
-  if (currentUser !== 'luis') return;
-  const container = document.getElementById('userManagementContainer');
-  let existingList = document.getElementById('userCredentialsList');
-  if (existingList) {
-    existingList.remove();
-  }
-  const userCredentialsDiv = document.createElement('div');
-  userCredentialsDiv.id = 'userCredentialsList';
-  userCredentialsDiv.innerHTML = '<h3>Credenciales de Usuarios</h3>';
-  const table = document.createElement('table');
-  table.style.width = '100%';
-  table.style.borderCollapse = 'collapse';
-  const headerRow = table.insertRow();
-  ['Usuario', 'ContraseÃ±a'].forEach(header => {
-    const th = document.createElement('th');
-    th.textContent = header;
-    th.style.border = '1px solid #444';
-    th.style.padding = '8px';
-    headerRow.appendChild(th);
+  window.addEventListener('storage', e => {
+    if (e.key === 'forceLogout') {
+      const data = JSON.parse(e.newValue);
+      const currentDevice = localStorage.getItem('currentDevice');
+      if (currentDevice) {
+        const deviceData = JSON.parse(currentDevice);
+        if (deviceData.username === data.username && deviceData.deviceId === data.deviceId) {
+          logout();
+          alert('Se ha iniciado sesión en otro dispositivo');
+        }
+      }
+    }
   });
-  Object.entries(users).filter(([username]) => username.startsWith('dn')).forEach(([username, userData]) => {
-    const row = table.insertRow();
-    const usernameCell = row.insertCell();
-    usernameCell.textContent = username;
-    usernameCell.style.border = '1px solid #444';
-    usernameCell.style.padding = '8px';
-    const passwordCell = row.insertCell();
-    passwordCell.textContent = userData.password;
-    passwordCell.style.border = '1px solid #444';
-    passwordCell.style.padding = '8px';
-  });
-  userCredentialsDiv.appendChild(table);
-  container.appendChild(userCredentialsDiv);
-}
-window.addEventListener('storage', e => {
-  if (e.key === 'forceLogout') {
-    const data = JSON.parse(e.newValue);
+  window.addEventListener('load', () => {
     const currentDevice = localStorage.getItem('currentDevice');
     if (currentDevice) {
       const deviceData = JSON.parse(currentDevice);
-      if (deviceData.username === data.username && deviceData.deviceId === data.deviceId) {
+      if (!deviceSessions[deviceData.username] || deviceSessions[deviceData.username] !== deviceData.deviceId) {
         logout();
-        alert('Se ha iniciado sesiÃ³n en otro dispositivo');
       }
     }
-  }
-});
-window.addEventListener('load', () => {
-  const currentDevice = localStorage.getItem('currentDevice');
-  if (currentDevice) {
-    const deviceData = JSON.parse(currentDevice);
-    if (!deviceSessions[deviceData.username] || deviceSessions[deviceData.username] !== deviceData.deviceId) {
-      logout();
-    }
-  }
-});</script>
+  });
+  </script>
 </body>
 </html>
