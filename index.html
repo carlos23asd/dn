@@ -57,7 +57,7 @@ async function loginWithSupabase() {
     const currentUser = data.user.email;
     document.getElementById('loginForm').style.display = 'none';
     document.getElementById('videoContainer').style.display = 'block';
-    document.getElementById('playlistContainer').style.display = 'none';
+    document.getElementById('playlistContainer').style.display = 'block';
     document.getElementById('logoutButton').style.display = 'block';
     const {
       data: adminData,
@@ -80,14 +80,12 @@ function logoutFromSupabase() {
   localStorage.removeItem(SESSION_TOKEN_KEY);
   localStorage.removeItem(SESSION_USER_KEY);
   localStorage.removeItem(SESSION_EXPIRY_KEY);
-  document.getElementById('playlistContainer').style.display = 'none';
   logout();
 }
 async function checkExistingSession() {
   const storedToken = localStorage.getItem(SESSION_TOKEN_KEY);
   const storedUser = localStorage.getItem(SESSION_USER_KEY);
   const storedExpiry = localStorage.getItem(SESSION_EXPIRY_KEY);
-  document.getElementById('playlistContainer').style.display = 'none';
   if (storedToken && storedUser && storedExpiry) {
     const expiryDate = new Date(storedExpiry);
     if (expiryDate > new Date()) {
@@ -976,7 +974,7 @@ select {
 }
 
 .playlist-container {
-  display: none; 
+  display: block; 
   background: #333;
   padding: 15px;
   border-radius: 8px;
