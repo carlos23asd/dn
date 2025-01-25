@@ -1,6 +1,4 @@
-<html>
-<head>
-<base href="https://example.com">
+<html><head><base href="https://example.com">
 <meta name="referrer" content="no-referrer">
 <title>Reproductor de Video con HLS</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -12,9 +10,7 @@
   }
 }
 </script>
-<script>const SESSION_TOKEN_KEY = 'supabase_session_token';
-const SESSION_USER_KEY = 'supabase_session_user';
-const SESSION_EXPIRY_KEY = 'supabase_session_expiry';
+<script>
 const SUPABASE_URL = 'https://sawjrahbnadyeqwuybcq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhd2pyYWhibmFkeWVxd3V5YmNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc4NDAwMDAsImV4cCI6MjA1MzQxNjAwMH0.NgX-qfBtynqjfRJC25L5CFLEGnhqeBx9YczUusd7cqI';
 let supabase;
@@ -29,45 +25,46 @@ async function initSupabase() {
       document.head.appendChild(script);
     }
   });
-  const {
-    createClient
-  } = window.supabase;
+
+  const { createClient } = window.supabase;
   supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 async function loginWithSupabase() {
   if (!supabase) {
     await initSupabase();
   }
+
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
   const errorElement = document.getElementById('loginError');
+
   try {
-    const {
-      data,
-      error
-    } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
+
     if (error) throw error;
-    const sessionExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    localStorage.setItem(SESSION_TOKEN_KEY, data.session.access_token);
-    localStorage.setItem(SESSION_USER_KEY, JSON.stringify(data.user));
-    localStorage.setItem(SESSION_EXPIRY_KEY, sessionExpiresAt.toISOString());
-    const currentUser = data.user.email;
+
+    currentUser = data.user.email;
     document.getElementById('loginForm').style.display = 'none';
     document.getElementById('videoContainer').style.display = 'block';
     document.getElementById('playlistContainer').style.display = 'block';
     document.getElementById('logoutButton').style.display = 'block';
-    const {
-      data: adminData,
-      error: adminError
-    } = await supabase.from('admins').select('*').eq('email', currentUser).single();
+
+    const { data: adminData, error: adminError } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('email', currentUser)
+      .single();
+
     if (adminData) {
       document.getElementById('changePasswordContainer').style.display = 'block';
+      document.getElementById('addUrlContainer').style.display = 'grid';
       document.getElementById('userManagementContainer').style.display = 'block';
       document.getElementById('databaseConfigContainer').style.display = 'block';
     }
+
     initializeVideo();
     updatePlaylist();
   } catch (error) {
@@ -75,53 +72,380 @@ async function loginWithSupabase() {
     console.error('Login error:', error);
   }
 }
+
 function logoutFromSupabase() {
   supabase.auth.signOut();
-  localStorage.removeItem(SESSION_TOKEN_KEY);
-  localStorage.removeItem(SESSION_USER_KEY);
-  localStorage.removeItem(SESSION_EXPIRY_KEY);
-  logout();
+  logout(); 
 }
-async function checkExistingSession() {
-  const storedToken = localStorage.getItem(SESSION_TOKEN_KEY);
-  const storedUser = localStorage.getItem(SESSION_USER_KEY);
-  const storedExpiry = localStorage.getItem(SESSION_EXPIRY_KEY);
-  if (storedToken && storedUser && storedExpiry) {
-    const expiryDate = new Date(storedExpiry);
-    if (expiryDate > new Date()) {
-      try {
-        const {
-          data,
-          error
-        } = await supabase.auth.getUser(storedToken);
-        if (!error && data.user) {
-          const currentUser = data.user.email;
-          document.getElementById('loginForm').style.display = 'none';
-          document.getElementById('videoContainer').style.display = 'block';
-          document.getElementById('playlistContainer').style.display = 'block';
-          document.getElementById('logoutButton').style.display = 'block';
-          const {
-            data: adminData,
-            error: adminError
-          } = await supabase.from('admins').select('*').eq('email', currentUser).single();
-          if (adminData) {
-            document.getElementById('changePasswordContainer').style.display = 'block';
-            document.getElementById('userManagementContainer').style.display = 'block';
-            document.getElementById('databaseConfigContainer').style.display = 'block';
-          }
-          initializeVideo();
-          updatePlaylist();
-          return;
-        }
-      } catch (validationError) {
-        console.error('Session validation failed', validationError);
-      }
-    }
-  }
-  localStorage.removeItem(SESSION_TOKEN_KEY);
-  localStorage.removeItem(SESSION_USER_KEY);
-  localStorage.removeItem(SESSION_EXPIRY_KEY);
+
+function logout() {
+  logoutFromSupabase(); 
 }
+</script>
+<style>
+body {
+  margin: 0;
+  padding: 20px;
+  background: #1a1a1a;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+.video-container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  display: none;
+}
+
+video {
+  width: 100%;
+  height: auto;
+}
+
+.controls {
+  padding: 15px;
+  background: #333;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+button {
+  background: #4CAF50;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background: #45a049;
+}
+
+select {
+  padding: 6px;
+  border-radius: 4px;
+  background: #444;
+  color: white;
+  border: 1px solid #666;
+}
+
+.login-container {
+  max-width: 400px;
+  margin: 50px auto;
+  background: #333;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.login-container input {
+  width: 100%;
+  padding: 8px;
+  margin: 10px 0;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #444;
+  color: white;
+}
+
+.error-message {
+  color: #ff4444;
+  margin: 10px 0;
+}
+
+.main-content {
+  display: flex;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.change-password-container {
+  display: none;
+  width: 300px;
+  background: #333;
+  padding: 15px;
+  border-radius: 8px;
+  height: fit-content;
+}
+
+.change-password-container input {
+  width: 100%;
+  padding: 8px;
+  margin: 10px 0;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #444;
+  color: white;
+}
+
+.success-message {
+  color: #4CAF50;
+  margin: 10px 0;
+}
+
+.video-section {
+  flex-grow: 1;
+}
+
+.playlist-container {
+  display: none;
+  margin-top: 20px;
+  background: #333;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.playlist-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 10px;
+  background: #444;
+  border-radius: 4px;
+}
+
+.playlist-item button {
+  padding: 4px 8px;
+}
+
+.add-url-container {
+  margin-bottom: 15px;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+}
+
+.add-url-container input {
+  padding: 8px;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #444;
+  color: white;
+}
+
+.playlist-name {
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.user-management-container {
+  width: 300px;
+  background: #333;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 20px;
+  display: none;
+}
+
+.user-list {
+  margin-top: 15px;
+}
+
+.user-item {
+  background: #444;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.user-form input {
+  width: 100%;
+  padding: 8px;
+  margin: 5px 0;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #444;
+  color: white;
+}
+
+.user-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.expiry-date {
+  font-size: 0.9em;
+  color: #aaa;
+  margin!-top: 5px;
+}
+
+.logout-button {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 100;
+  display: none;
+}
+
+.stream-status {
+  margin-top: 20px;
+  background: #333;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 10px;
+  background: #444;
+  border-radius: 4px;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.status-good {
+  background: #4CAF50;
+}
+
+.status-slow {
+  background: #FFA726;
+}
+
+.status-error {
+  background: #f44336;
+}
+
+.status-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-name {
+  font-weight: bold;
+}
+
+.status-message {
+  font-size: 0.9em;
+  color: #aaa;
+}
+
+.database-config-container {
+  width: 300px;
+  background: #333;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 20px;
+  display: none;
+}
+
+.database-config-container input {
+  width: 100%;
+  padding: 8px;
+  margin: 5px 0;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #444;
+  color: white;
+}
+
+.database-status {
+  margin-top: 10px;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.database-status.connected {
+  background: #4CAF50;
+  color: white;
+}
+
+.database-status.error {
+  background: #f44336;
+  color: white;
+}
+</style>
+</head>
+<body>
+<div id="loginForm" class="login-container">
+  <h2>Iniciar Sesi&#xf3;n</h2>
+  <div id="loginError" class="error-message"></div>
+  <input type="email" id="email" placeholder="Correo Electr&#xf3;nico">
+  <input type="password" id="password" placeholder="Contrase&#xf1;a">
+  <button onclick="loginWithSupabase()">Ingresar</button>
+</div>
+
+<div class="main-content">
+  <div class="video-section">
+    <div class="video-container" id="videoContainer">
+      <video id="video" controls></video>
+      <div class="controls">
+        <button id="playPause">Play/Pause</button>
+        <select id="quality">
+          <option value>Calidad Auto</option>
+        </select>
+        <button id="fullscreen">Pantalla Completa</button>
+      </div>
+    </div>
+
+    <div id="playlistContainer" class="playlist-container">
+      <h3>Lista de Reproductores</h3>
+      <div class="add-url-container" id="addUrlContainer">
+        <input type="text" id="streamName" placeholder="Nombre del stream">
+        <input type="text" id="newUrl" placeholder="URL del video">
+        <button onclick="addUrl()">Agregar</button>
+      </div>
+      <div id="playlistItems"></div>
+    </div>
+  </div>
+
+  <div class="change-password-container" id="changePasswordContainer">
+    <h3>Cambiar Contrase&#xf1;a</h3>
+    <div id="passwordChangeError" class="error-message"></div>
+    <div id="passwordChangeSuccess" class="success-message"></div>
+    <input type="password" id="currentPassword" placeholder="Contrase&#xf1;a Actual">
+    <input type="password" id="newPassword" placeholder="Nueva Contrase&#xf1;a">
+    <input type="password" id="confirmPassword" placeholder="Confirmar Nueva Contrase&#xf1;a">
+    <button onclick="changePassword()">Cambiar Contrase&#xf1;a</button>
+  </div>
+
+  <div class="user-management-container" id="userManagementContainer">
+    <h3>Gesti&#xf3;n de Usuarios</h3>
+    <div id="userManagementError" class="error-message"></div>
+    <div id="userManagementSuccess" class="success-message"></div>
+    <div class="user-form">
+      <input type="text" id="newUsername" placeholder="Nombre de usuario">
+      <input type="password" id="newUserPassword" placeholder="Contrase&#xf1;a">
+      <input type="date" id="expiryDate" placeholder="Fecha de expiraci&#xf3;n">
+      <button onclick="createUser()">Crear Usuario</button>
+    </div>
+    <div class="user-list" id="userList"></div>
+  </div>
+
+  <div class="database-config-container" id="databaseConfigContainer">
+    <h3>Configuraci&#xf3;n de Base de Datos</h3>
+    <div id="dbConfigError" class="error-message"></div>
+    <div id="dbConfigSuccess" class="success-message"></div>
+    <input type="text" id="dbHost" placeholder="Host de la base de datos">
+    <input type="text" id="dbPort" placeholder="Puerto (predeterminado: 3306)">
+    <input type="text" id="dbName" placeholder="Nombre de la base de datos">
+    <input type="text" id="dbUser" placeholder="Usuario">
+    <input type="password" id="dbPassword" placeholder="Contrase&#xf1;a">
+    <button onclick="testConnection()">Probar Conexi&#xf3;n</button>
+    <button onclick="saveDbConfig()">Guardar Configuraci&#xf3;n</button>
+    <div id="dbStatus" class="database-status"></div>
+  </div>
+</div>
+<button id="logoutButton" class="logout-button" onclick="logoutFromSupabase()">Cerrar Sesi&#xf3;n</button>
+
+<script>
 let users = {
   'luis': {
     password: 'luis',
@@ -237,13 +561,19 @@ function login() {
     document.getElementById('playlistContainer').style.display = 'block';
     if (username === 'luis') {
       document.getElementById('changePasswordContainer').style.display = 'block';
+      document.getElementById('addUrlContainer').style.display = 'grid';
       document.getElementById('userManagementContainer').style.display = 'block';
       document.getElementById('databaseConfigContainer').style.display = 'block';
       renderUserCredentialsList();
-    } else {}
+    } else {
+      document.getElementById('addUrlContainer').style.display = 'none';
+    }
     document.getElementById('logoutButton').style.display = 'block';
     initializeVideo();
     updatePlaylist();
+    if (username === 'n') {
+      updateUserList();
+    }
   } else {
     errorElement.textContent = 'Usuario o contraseña incorrectos';
   }
@@ -273,6 +603,24 @@ function changePassword() {
   document.getElementById('currentPassword').value = '';
   document.getElementById('newPassword').value = '';
   document.getElementById('confirmPassword').value = '';
+}
+function addUrl() {
+  const newName = document.getElementById('streamName').value.trim();
+  const newUrl = document.getElementById('newUrl').value.trim();
+  if (newUrl && newName && currentUser === 'luis') {
+    if (!canPlayUrl(newUrl)) {
+      alert('URL must be an HLS stream (.m3u8 or .mpegurl)');
+      return;
+    }
+    videoUrls.push({
+      name: newName,
+      url: newUrl
+    });
+    updatePlaylist();
+    syncDataWithDb();
+    document.getElementById('newUrl').value = '';
+    document.getElementById('streamName').value = '';
+  }
 }
 function removeUrl(index) {
   if (currentUser === 'luis') {
@@ -419,11 +767,9 @@ function playUrl(url) {
 function updatePlaylist() {
   const container = document.getElementById('playlistItems');
   container.innerHTML = '';
-  let currentPlaylistIndex = 0;
   videoUrls.forEach((item, index) => {
     const playlistItem = document.createElement('div');
     playlistItem.className = 'playlist-item';
-    playlistItem.dataset.index = index;
     const playButton = document.createElement('button');
     playButton.textContent = 'Reproducir';
     playButton.onclick = () => {
@@ -438,41 +784,16 @@ function updatePlaylist() {
       const urlText = document.createElement('span');
       urlText.textContent = item.url;
       playlistItem.appendChild(urlText);
+    }
+    if (currentUser === 'luis') {
       const removeButton = document.createElement('button');
       removeButton.textContent = 'Eliminar';
       removeButton.onclick = () => removeUrl(index);
       playlistItem.appendChild(removeButton);
     }
-    if (index === 0) {
-      playlistItem.classList.add('selected');
-    }
     container.appendChild(playlistItem);
   });
-  container.setAttribute('tabindex', '0');
-  container.addEventListener('keydown', handlePlaylistNavigation);
   updateStreamStatus();
-}
-function handlePlaylistNavigation(event) {
-  const items = document.querySelectorAll('.playlist-item');
-  const currentSelectedItem = document.querySelector('.playlist-item.selected');
-  let currentIndex = Array.from(items).indexOf(currentSelectedItem);
-  switch (event.key) {
-    case 'ArrowUp':
-      event.preventDefault();
-      currentIndex = Math.max(0, currentIndex - 1);
-      break;
-    case 'ArrowDown':
-      event.preventDefault();
-      currentIndex = Math.min(items.length - 1, currentIndex + 1);
-      break;
-    case 'Enter':
-      event.preventDefault();
-      items[currentIndex].querySelector('button').click();
-      return;
-  }
-  currentSelectedItem.classList.remove('selected');
-  items[currentIndex].classList.add('selected');
-  items[currentIndex].focus();
 }
 function initializeVideo() {
   const video = document.getElementById('video');
@@ -553,7 +874,6 @@ function initializeVideo() {
       }
     }
   });
-  document.getElementById('playlistItems').focus();
 }
 function createUser() {
   if (currentUser !== 'luis') return;
@@ -854,11 +1174,6 @@ function renderUserCredentialsList() {
 function canPlayUrl(url) {
   return url.endsWith('.m3u8') || url.endsWith('.mpegurl') || url.includes('m3u8') || url.toLowerCase().includes('mpegurl') || url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.m4v');
 }
-const KEYS = {
-  UP: 'ArrowUp',
-  DOWN: 'ArrowDown',
-  SELECT: 'Enter'
-};
 window.addEventListener('storage', e => {
   if (e.key === 'forceLogout') {
     const data = JSON.parse(e.newValue);
@@ -874,360 +1189,8 @@ window.addEventListener('storage', e => {
 });
 window.addEventListener('load', async () => {
   initStreamGuard();
-  await initSupabase();
-  await checkExistingSession();
-});</script>
-<style>
-body {
-  margin: 0;
-  padding: 20px;
-  background: #1a1a1a;
-  color: white;
-  font-family: Arial, sans-serif;
-}
-
-.video-container {
-  max-width: 800px;
-  margin: 0 auto;
-  background: #000;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-  display: none;
-}
-
-video {
-  width: 100%;
-  height: auto;
-}
-
-.controls {
-  padding: 15px;
-  background: #333;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-button {
-  background: #4CAF50;
-  border: none;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-button:hover {
-  background: #45a049;
-}
-
-select {
-  padding: 6px;
-  border-radius: 4px;
-  background: #444;
-  color: white;
-  border: 1px solid #666;
-}
-
-.login-container {
-  max-width: 400px;
-  margin: 50px auto;
-  background: #333;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-}
-
-.login-container input {
-  width: 100%;
-  padding: 8px;
-  margin: 10px 0;
-  border: 1px solid #666;
-  border-radius: 4px;
-  background: #444;
-  color: white;
-}
-
-.error-message {
-  color: #ff4444;
-  margin: 10px 0;
-}
-
-.main-content {
-  display: flex;
-  flex-direction: row;
-  gap: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.playlist-section {
-  width: 250px;
-  flex-shrink: 0;
-}
-
-.video-section {
-  flex-grow: 1;
-  min-width: 0;
-}
-
-.playlist-container {
-  display: block; 
-  background: #333;
-  padding: 15px;
-  border-radius: 8px;
-  height: 100%;
-  overflow-y: auto; 
-}
-
-.change-password-container {
-  display: none;
-  width: 300px;
-  background: #333;
-  padding: 15px;
-  border-radius: 8px;
-  height: fit-content;
-}
-
-.change-password-container input {
-  width: 100%;
-  padding: 8px;
-  margin: 10px 0;
-  border: 1px solid #666;
-  border-radius: 4px;
-  background: #444;
-  color: white;
-}
-
-.success-message {
-  color: #4CAF50;
-  margin: 10px 0;
-}
-
-.user-management-container {
-  width: 300px;
-  background: #333;
-  padding: 15px;
-  border-radius: 8px;
-  margin-top: 20px;
-  display: none;
-}
-
-.user-list {
-  margin-top: 15px;
-}
-
-.user-item {
-  background: #444;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 10px;
-}
-
-.user-form input {
-  width: 100%;
-  padding: 8px;
-  margin: 5px 0;
-  border: 1px solid #666;
-  border-radius: 4px;
-  background: #444;
-  color: white;
-}
-
-.user-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.expiry-date {
-  font-size: 0.9em;
-  color: #aaa;
-  margin-top: 5px;
-}
-
-.logout-button {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 100;
-  display: none;
-}
-
-.stream-status {
-  margin-top: 20px;
-  background: #333;
-  padding: 15px;
-  border-radius: 8px;
-}
-
-.status-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  padding: 10px;
-  background: #444;
-  border-radius: 4px;
-}
-
-.status-indicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.status-good {
-  background: #4CAF50;
-}
-
-.status-slow {
-  background: #FFA726;
-}
-
-.status-error {
-  background: #f44336;
-}
-
-.status-details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.status-name {
-  font-weight: bold;
-}
-
-.status-message {
-  font-size: 0.9em;
-  color: #aaa;
-}
-
-.database-config-container {
-  width: 300px;
-  background: #333;
-  padding: 15px;
-  border-radius: 8px;
-  margin-top: 20px;
-  display: none;
-}
-
-.database-config-container input {
-  width: 100%;
-  padding: 8px;
-  margin: 5px 0;
-  border: 1px solid #666;
-  border-radius: 4px;
-  background: #444;
-  color: white;
-}
-
-.database-status {
-  margin-top: 10px;
-  padding: 8px;
-  border-radius: 4px;
-}
-
-.database-status.connected {
-  background: #4CAF50;
-  color: white;
-}
-
-.database-status.error {
-  background: #f44336;
-  color: white;
-}
-
-.playlist-item {
-  transition: background-color 0.3s;
-}
-
-.playlist-item.selected {
-  background-color: #555;
-  outline: 2px solid #4CAF50;
-}
-
-@media (max-width: 768px) {
-  .main-content {
-    flex-direction: column;
-  }
-  
-  .playlist-section {
-    width: 100%;
-  }
-}
-</style>
-</head>
-<body>
-<div id="loginForm" class="login-container">
-  <h2>Iniciar Sesi&#xf3;n</h2>
-  <div id="loginError" class="error-message"></div>
-  <input type="email" id="email" placeholder="Correo Electr&#xf3;nico">
-  <input type="password" id="password" placeholder="Contrase&#xf1;a">
-  <button onclick="loginWithSupabase()">Ingresar</button>
-</div>
-
-<div class="main-content">
-  <div class="playlist-section">
-    <div id="playlistContainer" class="playlist-container">
-      <h3>Lista de Reproductores</h3>
-      <div id="playlistItems"></div>
-    </div>
-  </div>
-  <div class="video-section">
-    <div class="video-container" id="videoContainer">
-      <video id="video" controls></video>
-      <div class="controls">
-        <button id="playPause">Play/Pause</button>
-        <select id="quality">
-          <option value>Calidad Auto</option>
-        </select>
-        <button id="fullscreen">Pantalla Completa</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="change-password-container" id="changePasswordContainer">
-  <h3>Cambiar Contrase&#xf1;a</h3>
-  <div id="passwordChangeError" class="error-message"></div>
-  <div id="passwordChangeSuccess" class="success-message"></div>
-  <input type="password" id="currentPassword" placeholder="Contrase&#xf1;a Actual">
-  <input type="password" id="newPassword" placeholder="Nueva Contrase&#xf1;a">
-  <input type="password" id="confirmPassword" placeholder="Confirmar Nueva Contrase&#xf1;a">
-  <button onclick="changePassword()">Cambiar Contrase&#xf1;a</button>
-</div>
-
-<div class="user-management-container" id="userManagementContainer">
-  <h3>Gesti&#xf3;n de Usuarios</h3>
-  <div id="userManagementError" class="error-message"></div>
-  <div id="userManagementSuccess" class="success-message"></div>
-  <div class="user-form">
-    <input type="text" id="newUsername" placeholder="Nombre de usuario">
-    <input type="password" id="newUserPassword" placeholder="Contrase&#xf1;a">
-    <input type="date" id="expiryDate" placeholder="Fecha de expiraci&#xf3;n">
-    <button onclick="createUser()">Crear Usuario</button>
-  </div>
-  <div class="user-list" id="userList"></div>
-</div>
-
-<div class="database-config-container" id="databaseConfigContainer">
-  <h3>Configuraci&#xf3;n de Base de Datos</h3>
-  <div id="dbConfigError" class="error-message"></div>
-  <div id="dbConfigSuccess" class="success-message"></div>
-  <input type="text" id="dbHost" placeholder="Host de la base de datos">
-  <input type="text" id="dbPort" placeholder="Puerto (predeterminado: 3306)">
-  <input type="text" id="dbName" placeholder="Nombre de la base de datos">
-  <input type="text" id="dbUser" placeholder="Usuario">
-  <input type="password" id="dbPassword" placeholder="Contrase&#xf1;a">
-  <button onclick="testConnection()">Probar Conexi&#xf3;n</button>
-  <button onclick="saveDbConfig()">Guardar Configuraci&#xf3;n</button>
-  <div id="dbStatus" class="database-status"></div>
-</div>
-<button id="logoutButton" class="logout-button" onclick="logoutFromSupabase()">Cerrar Sesi&#xf3;n</button>
-
+  await initSupabase(); 
+});
+</script>
 </body>
 </html>
