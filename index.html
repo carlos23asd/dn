@@ -1,8 +1,7 @@
 <html>
 <head>
-<base href>
-<meta name="referrer" content="no-referrer">
-<title>Reproductor de Video con HLS</title>
+  <base href>
+  <title>Reproductor de Video con HLS</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <style>
     body {
@@ -14,8 +13,7 @@
     }
     
     .video-container {
-      max-width: 800px;
-      margin: 0 auto;
+      width: 100%;
       background: #000;
       border-radius: 8px;
       overflow: hidden;
@@ -84,9 +82,56 @@
 
     .main-content {
       display: flex;
-      gap: 20px;
       max-width: 1200px;
       margin: 0 auto;
+      gap: 20px;
+    }
+
+    .video-section {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .playlist-container {
+      width: 400px;  
+      background: #333;
+      padding: 15px;
+      border-radius: 8px;
+      display: none;
+      max-height: 600px;  
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .playlist-sections {
+      display: flex;
+      gap: 15px;
+      height: 100%;
+    }
+
+    .playlist-section {
+      flex: 1;
+      background: #444;
+      border-radius: 8px;
+      padding: 10px;
+      overflow-y: auto;
+      scrollbar-width: thin;  
+      scrollbar-color: #666 #333;  
+    }
+
+    .playlist-section::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .playlist-section::-webkit-scrollbar-track {
+      background: #444;
+    }
+
+    .playlist-section::-webkit-scrollbar-thumb {
+      background-color: #666;
+      border-radius: 4px;
     }
 
     .change-password-container {
@@ -113,32 +158,6 @@
       margin: 10px 0;
     }
 
-    .video-section {
-      flex-grow: 1;
-    }
-
-    .playlist-container {
-      display: none;
-      margin-top: 20px;
-      background: #333;
-      padding: 15px;
-      border-radius: 8px;
-    }
-
-    .playlist-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-      padding: 10px;
-      background: #444;
-      border-radius: 4px;
-    }
-
-    .playlist-item button {
-      padding: 4px 8px;
-    }
-
     .add-url-container {
       margin-bottom: 15px;
       display: grid;
@@ -154,9 +173,23 @@
       color: white;
     }
 
-    .playlist-name {
-      font-weight: bold;
-      margin-right: 10px;
+    .playlist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #444;
+      border-radius: 4px;
+    }
+
+    .playlist-item.selected {
+      background: #666;
+      border: 2px solid #4CAF50;
+    }
+
+    .playlist-item button {
+      padding: 4px 8px;
     }
 
     .user-management-container {
@@ -177,8 +210,6 @@
       padding: 10px;
       border-radius: 4px;
       margin-bottom: 10px;
-      display: flex;
-      flex-direction: column;
     }
 
     .user-form input {
@@ -297,14 +328,19 @@
       background: #f44336;
       color: white;
     }
+
+    .controls button.selected {
+      background: #45a049;
+      box-shadow: 0 0 0 2px white;
+    }
   </style>
 </head>
 <body>
   <div id="loginForm" class="login-container">
-    <h2>Iniciar Sesi&#xf3;n</h2>
+    <h2>Iniciar Sesión</h2>
     <div id="loginError" class="error-message"></div>
     <input type="text" id="username" placeholder="Usuario">
-    <input type="password" id="password" placeholder="Contrase&#xf1;a">
+    <input type="password" id="password" placeholder="Contraseña">
     <button onclick="login()">Ingresar</button>
   </div>
 
@@ -316,7 +352,10 @@
         <input type="text" id="newUrl" placeholder="URL del video">
         <button onclick="addUrl()">Agregar</button>
       </div>
-      <div id="playlistItems"></div>
+      <div class="playlist-sections">
+        <div id="playlistItemsLeft" class="playlist-section"></div>
+        <div id="playlistItemsRight" class="playlist-section"></div>
+      </div>
     </div>
 
     <div class="video-section">
@@ -331,46 +370,45 @@
         </div>
       </div>
 
-    </div>
-
-    <div class="change-password-container" id="changePasswordContainer">
-      <h3>Cambiar Contrase&#xf1;a</h3>
-      <div id="passwordChangeError" class="error-message"></div>
-      <div id="passwordChangeSuccess" class="success-message"></div>
-      <input type="password" id="currentPassword" placeholder="Contrase&#xf1;a Actual">
-      <input type="password" id="newPassword" placeholder="Nueva Contrase&#xf1;a">
-      <input type="password" id="confirmPassword" placeholder="Confirmar Nueva Contrase&#xf1;a">
-      <button onclick="changePassword()">Cambiar Contrase&#xf1;a</button>
-    </div>
-
-    <div class="user-management-container" id="userManagementContainer">
-      <h3>Gesti&#xf3;n de Usuarios</h3>
-      <div id="userManagementError" class="error-message"></div>
-      <div id="userManagementSuccess" class="success-message"></div>
-      <div class="user-form">
-        <input type="text" id="newUsername" placeholder="Nombre de usuario">
-        <input type="password" id="newUserPassword" placeholder="Contrase&#xf1;a">
-        <input type="date" id="expiryDate" placeholder="Fecha de expiraci&#xf3;n">
-        <button onclick="createUser()">Crear Usuario</button>
+      <div class="change-password-container" id="changePasswordContainer">
+        <h3>Cambiar Contraseña</h3>
+        <div id="passwordChangeError" class="error-message"></div>
+        <div id="passwordChangeSuccess" class="success-message"></div>
+        <input type="password" id="currentPassword" placeholder="Contraseña Actual">
+        <input type="password" id="newPassword" placeholder="Nueva Contraseña">
+        <input type="password" id="confirmPassword" placeholder="Confirmar Nueva Contraseña">
+        <button onclick="changePassword()">Cambiar Contraseña</button>
       </div>
-      <div class="user-list" id="userList"></div>
-    </div>
 
-    <div class="database-config-container" id="databaseConfigContainer">
-      <h3>Configuraci&#xf3;n de Base de Datos</h3>
-      <div id="dbConfigError" class="error-message"></div>
-      <div id="dbConfigSuccess" class="success-message"></div>
-      <input type="text" id="dbHost" placeholder="Host de la base de datos">
-      <input type="text" id="dbPort" placeholder="Puerto (predeterminado: 3306)">
-      <input type="text" id="dbName" placeholder="Nombre de la base de datos">
-      <input type="text" id="dbUser" placeholder="Usuario">
-      <input type="password" id="dbPassword" placeholder="Contrase&#xf1;a">
-      <button onclick="testConnection()">Probar Conexi&#xf3;n</button>
-      <button onclick="saveDbConfig()">Guardar Configuraci&#xf3;n</button>
-      <div id="dbStatus" class="database-status"></div>
+      <div class="user-management-container" id="userManagementContainer">
+        <h3>Gestión de Usuarios</h3>
+        <div id="userManagementError" class="error-message"></div>
+        <div id="userManagementSuccess" class="success-message"></div>
+        <div class="user-form">
+          <input type="text" id="newUsername" placeholder="Nombre de usuario">
+          <input type="password" id="newUserPassword" placeholder="Contraseña">
+          <input type="date" id="expiryDate" placeholder="Fecha de expiración">
+          <button onclick="createUser()">Crear Usuario</button>
+        </div>
+        <div class="user-list" id="userList"></div>
+      </div>
+
+      <div class="database-config-container" id="databaseConfigContainer">
+        <h3>Configuración de Base de Datos</h3>
+        <div id="dbConfigError" class="error-message"></div>
+        <div id="dbConfigSuccess" class="success-message"></div>
+        <input type="text" id="dbHost" placeholder="Host de la base de datos">
+        <input type="text" id="dbPort" placeholder="Puerto (predeterminado: 3306)">
+        <input type="text" id="dbName" placeholder="Nombre de la base de datos">
+        <input type="text" id="dbUser" placeholder="Usuario">
+        <input type="password" id="dbPassword" placeholder="Contraseña">
+        <button onclick="testConnection()">Probar Conexión</button>
+        <button onclick="saveDbConfig()">Guardar Configuración</button>
+        <div id="dbStatus" class="database-status"></div>
+      </div>
     </div>
   </div>
-  <button id="logoutButton" class="logout-button" onclick="logout()">Cerrar Sesi&#xf3;n</button>
+  <button id="logoutButton" class="logout-button" onclick="logout()">Cerrar Sesión</button>
 
   <script>
     let users = {
@@ -389,34 +427,34 @@
       url: 'https://stream.gia.tv/giatv/giatv-Gary2CanalGary2Canal/Gary2CanalGary2Canal/chunks.m3u8'
     }, {
       name: 'Win+',
-      url: 'https://cos1.lolatid.com/winplus/tracks-v1a1/mono.m3u8?token=d0d499e219061037d25d89a5e03201fa6a1dd738-a6-1737825938-1737825878'
+      url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
     }];
     videoUrls.push({
       name: 'ESPN',
       url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
     }, {
       name: 'ESPN 2',
-      url: 'https://dglvz29s.fubohd.com/espn2/tracks-v1a1/mono.m3u8?token=922d4289e5897536ea63e8451e976b26f6b5a614-09-1737687500-1737651500'
+      url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
     }, {
       name: 'ESPN 3',
-      url: 'https://yxdlc29tzq.fubohd.com/espn3/tracks-v1a1/mono.m3u8?token=88b0d0f1857750cdd675143cdbe38b70ef7f3546-7c-1737687550-1737651550'
+      url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
     });
     videoUrls.push({
       name: 'ESPN 4',
-      url: 'https://d2hpc3rszq.fubohd.com/espn4/tracks-v1a1/mono.m3u8?token=7e596cd774ad7a063c15252d13b324b9703856a2-e8-1737687648-1737651648'
+      url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
     }, {
       name: 'ESPN EXTRA',
-      url: 'https://am91cm5leq.fubohd.com/espn5/tracks-v1a1/mono.m3u8?token=c5bd09a2d5d0b3c24639d45110346b82bec20bc3-a7-1737687690-1737651690'
+      url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
     }, {
       name: 'ESPN Premium',
       url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
     }, {
       name: 'Directv',
-      url: 'https://jf2.naqsheala.com:999/hls/directsp.m3u8?md5=S1zdNKRTyg_rg94qpoBFeg&expires=1737663023'
+      url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
     });
     videoUrls.push({
       name: 'Solo eventos',
-      url: 'https://jf2.naqsheala.com:999/hls/directsp.m3u8?md5=_eQWBzjGyConBjOd433B3w&expires=1737660255'
+      url: 'https://cale.pricesaskeloadsc.com/espn1/tracks-v1a1/mono.m3u8?token=269839fde5dc06a07156029ce04a546b6e49241a-bf-1736650792-1736614792'
     });
     let currentHls = null;
     let streamStatuses = {};
@@ -430,36 +468,16 @@
       dialect: 'mysql'
     };
     let selectedPlaylistIndex = 0;
-    const streamGuardConfig = {
-      enabled: true,
-      anonymizeHeaders: true,
-      bypassCors: true,
-      maskUserAgent: true,
-      maskReferrer: true
-    };
-    function initStreamGuard() {
-      if (!streamGuardConfig.enabled) return;
-      const originalFetch = window.fetch;
-      window.fetch = async function (url, options = {}) {
-        options.credentials = 'omit';
-        options.headers = {
-          ...options.headers,
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Referer': '',
-          'Origin': null
-        };
-        return originalFetch(url, options);
-      };
-    }
+    let isFocusOnControls = false;
+    let selectedControlIndex = 0;
+    let isPlaylistFocused = true;
+    let playlistScrollPosition = 0;
+
     function generateDeviceId() {
       return Math.random().toString(36).substring(2) + Date.now().toString(36);
     }
+
     function login() {
-      if (streamGuardConfig.enabled) {
-        sessionStorage.clear();
-        localStorage.removeItem('hlsPlayerData');
-        document.cookie = 'hlsPlayerSession=; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
-      }
       const username = document.getElementById('username').value;
       const password = document.getElementById('password').value;
       const errorElement = document.getElementById('loginError');
@@ -484,8 +502,8 @@
         }));
         currentUser = username;
         document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('videoContainer').style.display = 'block';
         document.getElementById('playlistContainer').style.display = 'block';
+        document.getElementById('videoContainer').style.display = 'block';
         if (username === 'luis') {
           document.getElementById('changePasswordContainer').style.display = 'block';
           document.getElementById('addUrlContainer').style.display = 'grid';
@@ -498,13 +516,14 @@
         document.getElementById('logoutButton').style.display = 'block';
         initializeVideo();
         updatePlaylist();
-        if (username === 'n') {
+        if (username === 'luis') {
           updateUserList();
         }
       } else {
         errorElement.textContent = 'Usuario o contraseña incorrectos';
       }
     }
+
     function changePassword() {
       const currentPassword = document.getElementById('currentPassword').value;
       const newPassword = document.getElementById('newPassword').value;
@@ -531,6 +550,7 @@
       document.getElementById('newPassword').value = '';
       document.getElementById('confirmPassword').value = '';
     }
+
     function addUrl() {
       const newName = document.getElementById('streamName').value.trim();
       const newUrl = document.getElementById('newUrl').value.trim();
@@ -545,6 +565,7 @@
         document.getElementById('streamName').value = '';
       }
     }
+
     function removeUrl(index) {
       if (currentUser === 'luis') {
         videoUrls.splice(index, 1);
@@ -552,6 +573,7 @@
         updatePlaylist();
       }
     }
+
     function playUrl(url) {
       if (currentHls) {
         currentHls.destroy();
@@ -560,51 +582,7 @@
       const qualitySelect = document.getElementById('quality');
       qualitySelect.innerHTML = '<option value="">Calidad Auto</option>';
       if (Hls.isSupported()) {
-        const config = {
-          enableWorker: true,
-          maxBufferLength: 60,
-          maxMaxBufferLength: 600,
-          maxBufferSize: 600000000,
-          maxBufferHole: 0.5,
-          highBufferWatchdogPeriod: 2,
-          abrEwmaDefaultEstimate: 500000,
-          abrBandWidthFactor: 0.95,
-          abrBandWidthUpFactor: 0.7,
-          abrMaxWithRealBitrate: true,
-          maxStarvationDelay: 4,
-          maxLoadingDelay: 4,
-          lowLatencyMode: false,
-          backBufferLength: 90,
-          xhrSetup: function (xhr, url) {
-            if (streamGuardConfig.enabled) {
-              xhr.setRequestHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-              xhr.setRequestHeader('Referer', '');
-              xhr.setRequestHeader('Origin', null);
-              xhr.setRequestHeader('X-Request-ID', Math.random().toString(36));
-              xhr.setRequestHeader('Cookie', '');
-              xhr.setRequestHeader('Authorization', '');
-            }
-          },
-          loader: class extends Hls.DefaultConfig.loader {
-            constructor(config) {
-              super(config);
-              const load = this.load.bind(this);
-              this.load = function (context, config, callbacks) {
-                if (streamGuardConfig.enabled) {
-                  const url = new URL(context.url);
-                  url.searchParams.forEach((value, key) => {
-                    if (key.match(/token|auth|key|sign/i)) {
-                      url.searchParams.set(key, btoa(value));
-                    }
-                  });
-                  context.url = url.toString();
-                }
-                return load(context, config, callbacks);
-              };
-            }
-          }
-        };
-        currentHls = new Hls(config);
+        currentHls = new Hls();
         currentHls.loadSource(url);
         currentHls.attachMedia(video);
         currentHls.on(Hls.Events.ERROR, function (event, data) {
@@ -651,58 +629,201 @@
         });
       }
     }
+
     function updatePlaylist() {
-      const container = document.getElementById('playlistItems');
-      container.innerHTML = '';
-      
+      const containerLeft = document.getElementById('playlistItemsLeft');
+      const containerRight = document.getElementById('playlistItemsRight');
+      containerLeft.innerHTML = '';
+      containerRight.innerHTML = '';
+
+      const halfLength = Math.ceil(videoUrls.length / 2);
+
       videoUrls.forEach((item, index) => {
         const playlistItem = document.createElement('div');
         playlistItem.className = 'playlist-item';
         if (index === selectedPlaylistIndex) {
           playlistItem.classList.add('selected');
         }
-        
+
+        const playButton = document.createElement('button');
+        playButton.textContent = 'Reproducir';
+        playButton.onclick = () => {
+          playUrl(item.url);
+        };
+
         const nameSpan = document.createElement('span');
         nameSpan.className = 'playlist-name';
         nameSpan.textContent = item.name;
-        
-        playlistItem.addEventListener('click', () => {
-          selectedPlaylistIndex = index;
-          updatePlaylistSelection();
-          playUrl(item.url);
-        });
 
+        playlistItem.appendChild(playButton);
         playlistItem.appendChild(nameSpan);
-        
+
         if (currentUser === 'luis') {
           const urlText = document.createElement('span');
           urlText.textContent = item.url;
           playlistItem.appendChild(urlText);
-          
+        }
+
+        if (currentUser === 'luis') {
           const removeButton = document.createElement('button');
           removeButton.textContent = 'Eliminar';
-          removeButton.onclick = (e) => {
-            e.stopPropagation();
-            removeUrl(index);
-          };
+          removeButton.onclick = () => removeUrl(index);
           playlistItem.appendChild(removeButton);
         }
-        
-        container.appendChild(playlistItem);
+
+        if (index < halfLength) {
+          containerLeft.appendChild(playlistItem);
+        } else {
+          containerRight.appendChild(playlistItem);
+        }
       });
-      
       updateStreamStatus();
     }
-    function updatePlaylistSelection() {
-      const playlistItems = document.getElementById('playlistItems').children;
-      for (let i = 0; i < playlistItems.length; i++) {
-        if (i === selectedPlaylistIndex) {
-          playlistItems[i].classList.add('selected');
-        } else {
-          playlistItems[i].classList.remove('selected');
-        }
+
+    document.addEventListener('keydown', (e) => {
+      if (!currentUser) return; 
+
+      const playlistContainerLeft = document.getElementById('playlistItemsLeft');
+      const playlistContainerRight = document.getElementById('playlistItemsRight');
+      const halfLength = Math.ceil(videoUrls.length / 2);
+      const controlButtons = ['playPause', 'fullscreen'];
+
+      switch(e.key) {
+        case 'ArrowUp':
+          e.preventDefault();  
+          if (!isFocusOnControls) {
+            selectedPlaylistIndex = Math.max(0, selectedPlaylistIndex - 1);
+            
+            const containerToUse = selectedPlaylistIndex < halfLength ? 
+              playlistContainerLeft : playlistContainerRight;
+            const playlistItems = containerToUse.children;
+            const localIndex = selectedPlaylistIndex % halfLength;
+
+            if (playlistItems[localIndex]) {
+              const selectedItem = playlistItems[localIndex];
+              const containerRect = containerToUse.getBoundingClientRect();
+              const itemRect = selectedItem.getBoundingClientRect();
+
+              if (itemRect.top < containerRect.top) {
+                containerToUse.scrollTop = selectedItem.offsetTop;
+              }
+            }
+            
+            updatePlaylist();
+          }
+          break;
+        case 'ArrowDown':
+          e.preventDefault();  
+          if (!isFocusOnControls) {
+            selectedPlaylistIndex = Math.min(videoUrls.length - 1, selectedPlaylistIndex + 1);
+            
+            const containerToUse = selectedPlaylistIndex < halfLength ? 
+              playlistContainerLeft : playlistContainerRight;
+            const playlistItems = containerToUse.children;
+            const localIndex = selectedPlaylistIndex % halfLength;
+
+            if (playlistItems[localIndex]) {
+              const selectedItem = playlistItems[localIndex];
+              const containerRect = containerToUse.getBoundingClientRect();
+              const itemRect = selectedItem.getBoundingClientRect();
+
+              if (itemRect.bottom > containerRect.bottom) {
+                containerToUse.scrollTop = selectedItem.offsetTop - containerRect.height + selectedItem.offsetHeight;
+              }
+            }
+            
+            updatePlaylist();
+          }
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (isFocusOnControls) {
+            // If currently on controls, move to playlist
+            isFocusOnControls = false;
+            isPlaylistFocused = true;
+            updateControlSelection();
+          } else {
+            // If on playlist, move to leftmost controls
+            isFocusOnControls = true;
+            isPlaylistFocused = false;
+            selectedControlIndex = 0;
+            updateControlSelection();
+          }
+          break;
+
+        case 'ArrowRight':
+          e.preventDefault();
+          if (isFocusOnControls) {
+            // If currently on controls, move to the next control
+            selectedControlIndex = Math.min(controlButtons.length - 1, selectedControlIndex + 1);
+            updateControlSelection();
+          } else {
+            // If on playlist, move to the rightmost control
+            isFocusOnControls = true;
+            isPlaylistFocused = false;
+            selectedControlIndex = controlButtons.length - 1;
+            updateControlSelection();
+          }
+          break;
+
+        // Modify existing Enter key handling
+        case 'Enter':
+          if (isFocusOnControls) {
+            // Existing control button handling
+            const selectedButtonId = controlButtons[selectedControlIndex];
+            const selectedButton = document.getElementById(selectedButtonId);
+            if (selectedButtonId === 'playPause') {
+              const video = document.getElementById('video');
+              if (video.paused) {
+                video.play();
+              } else {
+                video.pause();
+              }
+            } else if (selectedButtonId === 'fullscreen') {
+              const video = document.getElementById('video');
+              if (!document.fullscreenElement) {
+                if (video.requestFullscreen) {
+                  video.requestFullscreen();
+                } else if (video.webkitRequestFullscreen) {
+                  video.webkitRequestFullscreen();
+                } else if (video.msRequestFullscreen) {
+                  video.msRequestFullscreen();
+                }
+              } else {
+                if (document.exitFullscreen) {
+                  document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                  document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                  document.msExitFullscreen();
+                }
+              }
+            }
+          } else {
+            // If on playlist, play selected URL
+            const selectedUrl = videoUrls[selectedPlaylistIndex].url;
+            playUrl(selectedUrl);
+          }
+          break;
       }
+    });
+
+    function updateControlSelection() {
+      const playPauseBtn = document.getElementById('playPause');
+      const fullscreenBtn = document.getElementById('fullscreen');
+      const controlButtons = ['playPause', 'fullscreen'];
+
+      playPauseBtn.classList.remove('selected');
+      fullscreenBtn.classList.remove('selected');
+
+      if (isFocusOnControls) {
+        const selectedButton = document.getElementById(controlButtons[selectedControlIndex]);
+        selectedButton.classList.add('selected');
+      }
+
+      updatePlaylist();
     }
+
     function initializeVideo() {
       const video = document.getElementById('video');
       const playPauseBtn = document.getElementById('playPause');
@@ -782,7 +903,10 @@
           }
         }
       });
+      isFocusOnControls = false;
+      selectedControlIndex = 0;
     }
+
     function createUser() {
       if (currentUser !== 'luis') return;
       const username = document.getElementById('newUsername').value.trim();
@@ -811,6 +935,7 @@
       updateUserList();
       syncDataWithDb();
     }
+
     function updateUserList() {
       if (currentUser !== 'luis') {
         const existingList = document.getElementById('userCredentialsList');
@@ -851,6 +976,7 @@
         renderUserCredentialsList();
       }
     }
+
     function editUser(username) {
       if (currentUser !== 'luis') return;
       const newPassword = prompt('Nueva contraseña para ' + username);
@@ -864,6 +990,7 @@
       updateUserList();
       syncDataWithDb();
     }
+
     function deleteUser(username) {
       if (currentUser !== 'luis' || username === 'luis') return;
       if (confirm(`¿Estás seguro de eliminar al usuario ${username}?`)) {
@@ -872,6 +999,7 @@
         syncDataWithDb();
       }
     }
+
     function logout() {
       if (currentUser) {
         delete deviceSessions[currentUser];
@@ -896,6 +1024,7 @@
       }
       streamStatuses = {};
     }
+
     function updateStreamStatus() {
       const container = document.getElementById('playlistContainer');
       let statusContainer = document.querySelector('.stream-status');
@@ -932,12 +1061,13 @@
       statusContainer.innerHTML = '<h3>Estado de Streams</h3>';
       statusContainer.appendChild(statusContent);
     }
+
     async function testConnection() {
       const errorElement = document.getElementById('dbConfigError');
       const successElement = document.getElementById('dbConfigSuccess');
       const statusElement = document.getElementById('dbStatus');
       try {
-        const response = await fetch('api!//test-mysql-connection', {
+        const response = await fetch('api/test-mysql-connection', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -956,7 +1086,7 @@
           statusElement.className = 'database-status connected';
           statusElement.textContent = 'Conexión MySQL exitosa';
           errorElement.textContent = '';
-          successElement.textContent = 'Prueba de conexión MySQL exitosa';
+          successElement.textContent = 'Prueba de conexión MySQL';
         } else {
           throw new Error(data.error);
         }
@@ -967,6 +1097,7 @@
         successElement.textContent = '';
       }
     }
+
     async function saveDbConfig() {
       const errorElement = document.getElementById('dbConfigError');
       const successElement = document.getElementById('dbConfigSuccess');
@@ -989,8 +1120,8 @@
         const data = await response.json();
         if (data.success) {
           dbConfig = config;
-          successElement.textContent = 'Configuración MySQL guardada exitosamente';
-          errorElement.textContent = '';
+          successElement.textContent = 'Configuración MySQL guardada';
+          errorElement.tencent = '';
           await syncDataWithDb();
         } else {
           throw new Error(data.error);
@@ -1000,6 +1131,7 @@
         successElement.textContent = '';
       }
     }
+
     async function syncDataWithDb() {
       try {
         const usersResponse = await fetch('api/sync-mysql-users', {
@@ -1010,11 +1142,11 @@
           body: JSON.stringify({
             users,
             dbConfig: {
-              host: document.getElementById('dbHost').value,
-              database: document.getElementById('dbName').value,
-              user: document.getElementById('dbUser').value,
-              password: document.getElementById('dbPassword').value,
-              port: document.getElementById('dbPort').value || 3306
+              host: dbConfig.host,
+              database: dbConfig.database,
+              user: dbConfig.user,
+              password: dbConfig.password,
+              port: dbConfig.port
             }
           })
         });
@@ -1026,11 +1158,11 @@
           body: JSON.stringify({
             videoUrls,
             dbConfig: {
-              host: document.getElementById('dbHost').value,
-              database: document.getElementById('dbName').value,
-              user: document.getElementById('dbUser').value,
-              password: document.getElementById('dbPassword').value,
-              port: document.getElementById('dbPort').value || 3306
+              host: dbConfig.host,
+              database: dbConfig.database,
+              user: dbConfig.user,
+              password: dbConfig.password,
+              port: dbConfig.port
             }
           })
         });
@@ -1040,6 +1172,7 @@
         return false;
       }
     }
+
     function renderUserCredentialsList() {
       if (currentUser !== 'luis') return;
       const container = document.getElementById('userManagementContainer');
@@ -1075,6 +1208,7 @@
       userCredentialsDiv.appendChild(table);
       container.appendChild(userCredentialsDiv);
     }
+
     window.addEventListener('storage', e => {
       if (e.key === 'forceLogout') {
         const data = JSON.parse(e.newValue);
@@ -1088,8 +1222,17 @@
         }
       }
     });
+
     window.addEventListener('load', () => {
-      initStreamGuard();
+      const currentDevice = localStorage.getItem('currentDevice');
+      if (currentDevice) {
+        const deviceData = JSON.parse(currentDevice);
+        if (!deviceSessions[deviceData.username] || deviceSessions[deviceData.username] !== deviceData.deviceId) {
+          logout();
+        }
+      }
+      selectedPlaylistIndex = 0;
+      updatePlaylist();
     });
   </script>
 </body>
