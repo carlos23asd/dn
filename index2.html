@@ -351,5 +351,67 @@ fullscreenBtn.addEventListener('click', () => {
   setupDevToolsDetection();
 
   </script>
+
+<script>
+  document.addEventListener('keydown', function (e) {
+    const items = document.querySelectorAll('#listaVideos li');
+    const active = document.querySelector('#listaVideos li.active');
+    let index = Array.from(items).indexOf(active);
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        if (index < items.length - 1) {
+          items[index + 1].focus();
+          items[index + 1].click();
+        }
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (index > 0) {
+          items[index - 1].focus();
+          items[index - 1].click();
+        }
+        break;
+      case "Enter":
+      case "OK":
+        if (active) active.click();
+        break;
+      case "f":
+      case "F":
+        if (!document.fullscreenElement) {
+          video.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen();
+        }
+        break;
+      case " ":
+        e.preventDefault();
+        if (video.paused) {
+          video.play();
+        } else {
+          video.pause();
+        }
+        break;
+    }
+  });
+
+  // Dar foco navegable a los canales
+  document.querySelectorAll('#listaVideos li').forEach(el => {
+    el.setAttribute('tabindex', '0');
+  });
+
+  // Estilo de foco visible
+  const style = document.createElement('style');
+  style.textContent = `
+    .playlist li:focus {
+      outline: 2px solid #4fc3f7;
+      background: #4fc3f7;
+      color: black;
+    }
+  `;
+  document.head.appendChild(style);
+</script>
+
 </body>
 </html>
