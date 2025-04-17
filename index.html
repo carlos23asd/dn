@@ -37,6 +37,7 @@
     }
 
     .input-group {
+      position: relative;
       margin-bottom: 20px;
       text-align: left;
     }
@@ -103,11 +104,10 @@
       right: 0;
       bottom: 0;
       background-color: rgba(0,0,0,0.7);
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       border-radius: 15px;
-      display: none;
     }
 
     .spinner {
@@ -145,52 +145,60 @@
     </div>
   </div>
 
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+  const SUPABASE_URL = 'https://udaloepzgkgjvbyzkhmy.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkYWxvZXB6Z2tnanZieXpraG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA0NDk2NjYsImV4cCI6MjA1NjAyNTY2Nn0.VcY3iVmYTfb5V0wYoGY3HPyNHKwcrTjA55Lf_lE_NL8';
 
-    const SUPABASE_URL = 'https://udaloepzgkgjvbyzkhmy.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkYWxvZXB6Z2tnanZieXpraG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA0NDk2NjYsImV4cCI6MjA1NjAyNTY2Nn0.VcY3iVmYTfb5V0wYoGY3HPyNHKwcrTjA55Lf_lE_NL8';
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Redirigir si ya está logueado
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
+  document.addEventListener("DOMContentLoaded", async () => {
+    const sessionData = await supabase.auth.getSession();
+    if (sessionData.data.session) {
       window.location.replace("index2.html");
     }
+  });
 
-    function mostrarMensaje(texto, color = "lightgreen") {
-      const mensaje = document.getElementById("mensaje");
-      mensaje.textContent = texto;
-      mensaje.style.color = color;
-      mensaje.classList.add("fade-in");
-      setTimeout(() => mensaje.classList.remove("fade-in"), 2500);
+  function mostrarMensaje(texto, color = "lightgreen") {
+    const mensaje = document.getElementById("mensaje");
+    mensaje.textContent = texto;
+    mensaje.style.color = color;
+    mensaje.classList.add("fade-in");
+    setTimeout(() => mensaje.classList.remove("fade-in"), 2500);
+  }
+
+  function mostrarCarga(estado) {
+    const spinner = document.getElementById("spinner");
+    if (spinner) {
+      spinner.style.display = estado ? "flex" : "none";
+    }
+  }
+
+  async function login() {
+    console.log("Iniciando login...");
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    if (!email || !password) {
+      mostrarMensaje("❌ Completa todos los campos", "tomato");
+      return;
     }
 
-    function mostrarCarga(estado) {
-      document.getElementById("spinner").style.display = estado ? "flex" : "none";
+    mostrarCarga(true);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    mostrarCarga(false);
+
+    if (error) {
+      mostrarMensaje("❌ Usuario o contraseña incorrectos", "tomato");
+      console.error(error);
+    } else {
+      mostrarMensaje("✅ Inicio de sesión exitoso");
+      setTimeout(() => window.location.replace("index2.html"), 1500);
     }
+  }
 
-    window.login = async function () {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-
-      if (!email || !password) {
-        mostrarMensaje("❌ Completa todos los campos", "tomato");
-        return;
-      }
-
-      mostrarCarga(true);
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      mostrarCarga(false);
-
-      if (error) {
-        mostrarMensaje("❌ Usuario o contraseña incorrectos", "tomato");
-      } else {
-        mostrarMensaje("✅ Inicio de sesión exitoso");
-        setTimeout(() => window.location.replace("index2.html"), 1500);
-      }
-    };
-  </script>
+  window.login = login;
+</script>
 
 </body>
 </html>
