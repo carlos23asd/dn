@@ -51,6 +51,12 @@
                     <p>O ingrese código manualmente:</p>
                     <input type="text" id="manualCode" placeholder="Código de barras">
                     <button onclick="addProductByCode()">Agregar</button>
+                    
+                    <div class="products-quick-list">
+                        <h3>Productos Disponibles</h3>
+                        <input type="text" id="searchQuickProduct" placeholder="Buscar producto..." onkeyup="filterQuickProducts()">
+                        <div id="quickProductList" class="quick-product-items"></div>
+                    </div>
                 </div>
                 
                 <div class="cart-area">

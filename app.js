@@ -86,6 +86,7 @@ async function handleLogin(e) {
         document.getElementById('userInfo').textContent = `Usuario: ${currentUser.username}`;
         
         await loadProducts();
+        await loadQuickProducts(); // Cargar productos para la lista rápida
         hideLoading();
     } catch (error) {
         console.error('Error en login:', error);
@@ -114,6 +115,8 @@ function showSection(section) {
     } else if (section === 'reportes') {
         updateReports();
         loadSalesHistory();
+    } else if (section === 'ventas') {
+        loadQuickProducts();
     }
 }
 
@@ -440,6 +443,144 @@ function clearCart() {
     }
 }
 
+// Lista rápida de productos en ventas
+async function loadQuickProducts() {
+    const quickProductList = document.getElementById('quickProductList');
+    
+    if (!quickProductList) return;
+    
+    quickProductList.innerHTML = '<div style="padding: 10px; text-align: center;">Cargando productos...</div>';
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('products')
+            .select('*')
+            .order('name');
+        
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+            quickProductList.innerHTML = '<div style="padding: 10px; text-align: center; color: #666;">No hay productos disponibles</div>';
+            return;
+        }
+        
+        displayQuickProducts(data);
+    } catch (error) {
+        console.error('Error al cargar productos rápidos:', error);
+        quickProductList.innerHTML = '<div style="padding: 10px; text-align: center; color: #dc3545;">Error al cargar productos</div>';
+    }
+}
+
+function displayQuickProducts(productList) {
+    const quickProductList = document.getElementById('quickProductList');
+    quickProductList.innerHTML = '';
+    
+    if (productList.length === 0) {
+        quickProductList.innerHTML = '<div style="padding: 10px; text-align: center; color: #666;">No se encontraron productos</div>';
+        return;
+    }
+    
+    productList.forEach(product => {
+        const item = document.createElement('div');
+        item.className = 'quick-product-item';
+        
+        if (product.stock <= 0) {
+            item.classList.add('out-of-stock');
+        }
+        
+        const stockClass = product.stock <= 5 ? 'low' : '';
+        const stockText = product.stock <= 0 ? 'Sin stock' : `Stock: ${product.stock}`;
+        
+        item.innerHTML = `
+            <div class="quick-product-info">
+                <div class="quick-product-name">${product.name}</div>
+                <div class="quick-product-price">${formatCurrency(product.price)}</div>
+            </div>
+            <div>
+                <span class="quick-product-stock ${stockClass}">${stockText}</span>
+                <button class="quick-product-add" onclick="addProductToCartById('${product.id}', this)" ${product.stock <= 0 ? 'disabled' : ''}>
+                    + Agregar
+                </button>
+            </div>
+        `;
+        
+        quickProductList.appendChild(item);
+    });
+}
+
+function filterQuickProducts() {
+    const search = document.getElementById('searchQuickProduct').value.toLowerCase();
+    const filteredProducts = products.filter(product => 
+        product.name.toLowerCase().includes(search) ||
+        product.barcode.includes(search)
+    );
+    displayQuickProducts(filteredProducts);
+}
+
+async function addProductToCartById(productId, buttonElement) {
+    showLoading();
+    
+    try {
+        const { data: product, error } = await supabaseClient
+            .from('products')
+            .select('*')
+            .eq('id', productId)
+            .single();
+        
+        if (error) throw error;
+        
+        if (!product) {
+            alert('Producto no encontrado');
+            hideLoading();
+            return;
+        }
+        
+        if (product.stock <= 0) {
+            alert('Producto sin stock');
+            hideLoading();
+            return;
+        }
+        
+        // Verificar si ya está en el carrito
+        const cartItem = cart.find(item => item.id === productId);
+        
+        if (cartItem) {
+            if (cartItem.quantity < product.stock) {
+                cartItem.quantity++;
+            } else {
+                alert('No hay suficiente stock');
+                hideLoading();
+                return;
+            }
+        } else {
+            cart.push({
+                ...product,
+                quantity: 1
+            });
+        }
+        
+        updateCart();
+        await loadQuickProducts(); // Actualizar la lista para reflejar el stock
+        hideLoading();
+        
+        // Feedback visual
+        if (buttonElement) {
+            const originalText = buttonElement.textContent;
+            const originalBg = buttonElement.style.background;
+            buttonElement.textContent = '✓ Agregado';
+            buttonElement.style.background = '#28a745';
+            setTimeout(() => {
+                buttonElement.textContent = originalText;
+                buttonElement.style.background = originalBg || '#667eea';
+            }, 1000);
+        }
+    } catch (error) {
+        console.error('Error al agregar producto:', error);
+        showError('Error al agregar producto: ' + error.message);
+        hideLoading();
+    }
+}
+
 async function finalizeSale() {
     if (cart.length === 0) {
         alert('El carrito está vacío');
@@ -490,6 +631,7 @@ async function finalizeSale() {
         cart = [];
         updateCart();
         await loadProducts();
+        await loadQuickProducts(); // Actualizar lista rápida con nuevo stock
         hideLoading();
     } catch (error) {
         console.error('Error al finalizar venta:', error);
