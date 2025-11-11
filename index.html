@@ -41,7 +41,11 @@
             <div class="sales-container">
                 <div class="scanner-area">
                     <h2>Escanear Producto</h2>
-                    <video id="video" autoplay></video>
+                    <div id="cameraSelector" style="display:none; margin-bottom: 10px;">
+                        <label>Seleccionar cámara:</label>
+                        <select id="cameraSelect" onchange="changeScannerCamera()"></select>
+                    </div>
+                    <video id="video" autoplay playsinline></video>
                     <button id="startScanner" onclick="startScanner()">Iniciar Escáner</button>
                     <button id="stopScanner" onclick="stopScanner()" style="display:none;">Detener Escáner</button>
                     <p>O ingrese código manualmente:</p>
@@ -152,7 +156,11 @@
         <div class="modal-content">
             <span class="close" onclick="closeBarcodeModal()">&times;</span>
             <h2>Escanear Código de Barras</h2>
-            <video id="productVideo" autoplay></video>
+            <div id="productCameraSelector" style="display:none; margin-bottom: 10px;">
+                <label>Seleccionar cámara:</label>
+                <select id="productCameraSelect" onchange="changeProductCamera()"></select>
+            </div>
+            <video id="productVideo" autoplay playsinline></video>
             <button onclick="stopProductScanner()">Cerrar</button>
         </div>
     </div>
