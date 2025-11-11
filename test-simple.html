@@ -134,9 +134,22 @@
                     return;
                 }
                 
-                // Iniciar escaneo
-                const selectedDevice = devices[0].deviceId;
-                log(`🎥 Usando: ${devices[0].label || 'Cámara predeterminada'}`, 'info');
+                // Buscar cámara trasera en móviles
+                let selectedDevice = devices[0].deviceId;
+                
+                const backCamera = devices.find(device => 
+                    device.label.toLowerCase().includes('back') || 
+                    device.label.toLowerCase().includes('rear') ||
+                    device.label.toLowerCase().includes('trasera') ||
+                    device.label.toLowerCase().includes('environment')
+                );
+                
+                if (backCamera) {
+                    selectedDevice = backCamera.deviceId;
+                    log(`📱 Usando cámara trasera: ${backCamera.label}`, 'success');
+                } else {
+                    log(`🎥 Usando: ${devices[0].label || 'Cámara predeterminada'}`, 'info');
+                }
                 log('🔍 Buscando códigos de barras...', 'info');
                 log('💡 Acerca un código de barras a la cámara', 'info');
                 

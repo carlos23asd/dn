@@ -140,11 +140,12 @@ function startScanner() {
     }
     
     // Solicitar permisos de cámara con mejor configuración
+    // facingMode: 'environment' = cámara trasera en móviles
     const constraints = {
         video: {
-            facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+            facingMode: { exact: 'environment' }, // Forzar cámara trasera
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
         }
     };
     
@@ -162,8 +163,24 @@ function startScanner() {
                 return;
             }
             
-            const selectedDeviceId = videoInputDevices[0].deviceId;
-            console.log('🎥 Usando cámara:', videoInputDevices[0].label || selectedDeviceId);
+            // Buscar cámara trasera (environment) en móviles
+            let selectedDeviceId = videoInputDevices[0].deviceId;
+            
+            // Intentar encontrar la cámara trasera
+            const backCamera = videoInputDevices.find(device => 
+                device.label.toLowerCase().includes('back') || 
+                device.label.toLowerCase().includes('rear') ||
+                device.label.toLowerCase().includes('trasera') ||
+                device.label.toLowerCase().includes('environment')
+            );
+            
+            if (backCamera) {
+                selectedDeviceId = backCamera.deviceId;
+                console.log('📱 Usando cámara trasera:', backCamera.label);
+            } else {
+                console.log('🎥 Usando cámara:', videoInputDevices[0].label || selectedDeviceId);
+            }
+            
             console.log('🔍 Escaneando... Acerca el código de barras a la cámara');
             
             let lastScannedCode = '';
@@ -616,9 +633,9 @@ function scanBarcodeForProduct() {
     
     const constraints = {
         video: {
-            facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+            facingMode: { exact: 'environment' }, // Forzar cámara trasera
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
         }
     };
     
@@ -637,7 +654,23 @@ function scanBarcodeForProduct() {
                 return;
             }
             
-            const selectedDeviceId = videoInputDevices[0].deviceId;
+            // Buscar cámara trasera en móviles
+            let selectedDeviceId = videoInputDevices[0].deviceId;
+            
+            const backCamera = videoInputDevices.find(device => 
+                device.label.toLowerCase().includes('back') || 
+                device.label.toLowerCase().includes('rear') ||
+                device.label.toLowerCase().includes('trasera') ||
+                device.label.toLowerCase().includes('environment')
+            );
+            
+            if (backCamera) {
+                selectedDeviceId = backCamera.deviceId;
+                console.log('📱 Usando cámara trasera:', backCamera.label);
+            } else {
+                console.log('🎥 Usando primera cámara disponible');
+            }
+            
             console.log('🔍 Escaneando producto...');
             
             productCodeReader.decodeFromVideoDevice(selectedDeviceId, 'productVideo', (result, err) => {
