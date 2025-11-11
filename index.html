@@ -1,37 +1,198 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Login Test</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Cajero - Supabase</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body style="font-family: sans-serif; padding: 30px;">
-  <h3>Test de Login Supabase</h3>
+<body>
+    <!-- Pantalla de Login -->
+    <div id="loginScreen" class="screen active">
+        <div class="login-container">
+            <h1>Sistema de Cajero</h1>
+            <form id="loginForm">
+                <input type="text" id="username" placeholder="Usuario" required>
+                <input type="password" id="password" placeholder="Contraseña" required>
+                <button type="submit">Iniciar Sesión</button>
+            </form>
+            <p class="hint">Usuario por defecto: admin | Contraseña: admin</p>
+            <div id="loginError" class="error-message"></div>
+        </div>
+    </div>
 
-  <input id="email" type="email" placeholder="Correo"><br><br>
-  <input id="password" type="password" placeholder="Contraseña"><br><br>
-  <button onclick="login()">Iniciar sesión</button>
-  <p id="mensaje"></p>
+    <!-- Pantalla Principal -->
+    <div id="mainScreen" class="screen">
+        <nav class="navbar">
+            <h1>Sistema de Cajero</h1>
+            <div class="nav-info">
+                <span id="userInfo"></span>
+            </div>
+            <div class="nav-buttons">
+                <button onclick="showSection('ventas')">Ventas</button>
+                <button onclick="showSection('productos')">Productos</button>
+                <button onclick="showSection('reportes')">Reportes</button>
+                <button onclick="logout()">Cerrar Sesión</button>
+            </div>
+        </nav>
 
-  <script>
-    const supabase = supabase.createClient(
-      'https://udaloepzgkgjvbyzkhmy.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkYWxvZXB6Z2tnanZieXpraG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA0NDk2NjYsImV4cCI6MjA1NjAyNTY2Nn0.VcY3iVmYTfb5V0wYoGY3HPyNHKwcrTjA55Lf_lE_NL8'
-    );
+        <!-- Sección de Ventas -->
+        <div id="ventasSection" class="section active">
+            <div class="sales-container">
+                <div class="scanner-area">
+                    <h2>Escanear Producto</h2>
+                    <video id="video" autoplay></video>
+                    <button id="startScanner" onclick="startScanner()">Iniciar Escáner</button>
+                    <button id="stopScanner" onclick="stopScanner()" style="display:none;">Detener Escáner</button>
+                    <p>O ingrese código manualmente:</p>
+                    <input type="text" id="manualCode" placeholder="Código de barras">
+                    <button onclick="addProductByCode()">Agregar</button>
+                </div>
+                
+                <div class="cart-area">
+                    <h2>Carrito de Compra</h2>
+                    <table id="cartTable">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Precio</th>
+                                <th>Cantidad</th>
+                                <th>Subtotal</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartBody"></tbody>
+                    </table>
+                    <div class="cart-total">
+                        <h3>Total: $<span id="cartTotal">0.00</span></h3>
+                        <button onclick="finalizeSale()" class="btn-primary">Finalizar Venta</button>
+                        <button onclick="clearCart()" class="btn-secondary">Limpiar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    async function login() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+        <!-- Sección de Productos -->
+        <div id="productosSection" class="section">
+            <h2>Gestión de Productos</h2>
+            <div class="product-form">
+                <h3>Agregar/Editar Producto</h3>
+                <form id="productForm">
+                    <input type="hidden" id="productId">
+                    <input type="text" id="productName" placeholder="Nombre del producto" required>
+                    <input type="number" id="productPrice" placeholder="Precio" step="0.01" required>
+                    <input type="number" id="productStock" placeholder="Stock inicial" required>
+                    <input type="text" id="productBarcode" placeholder="Código de barras" required>
+                    <button type="button" onclick="scanBarcodeForProduct()">Escanear Código</button>
+                    <button type="submit">Guardar Producto</button>
+                    <button type="button" onclick="cancelEdit()">Cancelar</button>
+                </form>
+            </div>
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            <div class="product-list">
+                <h3>Lista de Productos</h3>
+                <input type="text" id="searchProduct" placeholder="Buscar producto..." onkeyup="filterProducts()">
+                <table id="productTable">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th>Código</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productBody"></tbody>
+                </table>
+            </div>
+        </div>
 
-      if (error) {
-        document.getElementById('mensaje').textContent = '❌ Error: ' + error.message;
-      } else {
-        document.getElementById('mensaje').textContent = '✅ ¡Login exitoso!';
-        setTimeout(() => location.href = 'index2.html', 1500);
-      }
-    }
-  </script>
+        <!-- Sección de Reportes -->
+        <div id="reportesSection" class="section">
+            <h2>Reportes de Ventas</h2>
+            <div class="report-cards">
+                <div class="report-card">
+                    <h3>Ventas de Hoy</h3>
+                    <p class="amount">$<span id="todaySales">0.00</span></p>
+                    <p class="count"><span id="todayCount">0</span> ventas</p>
+                </div>
+                <div class="report-card">
+                    <h3>Ventas de Ayer</h3>
+                    <p class="amount">$<span id="yesterdaySales">0.00</span></p>
+                    <p class="count"><span id="yesterdayCount">0</span> ventas</p>
+                </div>
+                <div class="report-card">
+                    <h3>Ventas del Mes</h3>
+                    <p class="amount">$<span id="monthSales">0.00</span></p>
+                    <p class="count"><span id="monthCount">0</span> ventas</p>
+                </div>
+            </div>
+            
+            <div class="sales-history">
+                <h3>Historial de Ventas</h3>
+                <button onclick="loadSalesHistory()">Actualizar</button>
+                <table id="salesTable">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Hora</th>
+                            <th>Total</th>
+                            <th>Productos</th>
+                            <th>Detalles</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para escanear código de producto -->
+    <div id="barcodeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeBarcodeModal()">&times;</span>
+            <h2>Escanear Código de Barras</h2>
+            <video id="productVideo" autoplay></video>
+            <button onclick="stopProductScanner()">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Modal para detalles de venta -->
+    <div id="saleDetailModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSaleDetailModal()">&times;</span>
+            <h2>Detalles de la Venta</h2>
+            <div id="saleDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Cargando...</p>
+    </div>
+
+    <!-- Cargar librerías primero -->
+    <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    
+    <!-- Cargar app después de las librerías -->
+    <script>
+        // Verificar que las librerías se cargaron
+        window.addEventListener('load', function() {
+            console.log('=== VERIFICACIÓN DE LIBRERÍAS ===');
+            console.log('ZXing disponible:', typeof ZXing !== 'undefined');
+            console.log('Supabase disponible:', typeof supabase !== 'undefined');
+            
+            if (typeof ZXing === 'undefined') {
+                console.error('❌ ZXing NO se cargó');
+                console.log('Intentando cargar desde CDN alternativa...');
+            } else {
+                console.log('✅ ZXing cargado:', ZXing);
+            }
+        });
+    </script>
+    <script src="app.js"></script>
 </body>
 </html>

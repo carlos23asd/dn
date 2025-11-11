@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Escáner Básico</title>
+    <style>
+        body { 
+            font-family: Arial; 
+            padding: 20px; 
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        video { 
+            width: 100%; 
+            border: 3px solid #333; 
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        button { 
+            padding: 15px 30px; 
+            font-size: 18px; 
+            margin: 10px 5px; 
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
+        }
+        button:hover { background: #0056b3; }
+        .log { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .info { color: blue; }
+        .result {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 24px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test de Escáner</h1>
+        
+        <button onclick="testScanner()">▶️ Iniciar Escáner</button>
+        <button onclick="stopScanner()">⏹️ Detener</button>
+        
+        <video id="video" autoplay playsinline></video>
+        
+        <div id="result" class="result"></div>
+        
+        <h3>📋 Log de Eventos:</h3>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+    <script>
+        let codeReader = null;
+        let scanning = false;
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const className = type;
+            logDiv.innerHTML += `<div class="${className}">[${time}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        window.addEventListener('load', function() {
+            if (typeof ZXing !== 'undefined') {
+                log('✅ ZXing cargado correctamente', 'success');
+                log('Versión: ' + (ZXing.version || 'desconocida'), 'info');
+            } else {
+                log('❌ ZXing NO cargado', 'error');
+            }
+        });
+        
+        async function testScanner() {
+            log('🚀 Iniciando escáner...', 'info');
+            
+            if (typeof ZXing === 'undefined') {
+                log('❌ ZXing no disponible', 'error');
+                alert('ZXing no está cargado');
+                return;
+            }
+            
+            try {
+                // Crear lector con configuración
+                const hints = new Map();
+                hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+                hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+                    ZXing.BarcodeFormat.EAN_13,
+                    ZXing.BarcodeFormat.EAN_8,
+                    ZXing.BarcodeFormat.CODE_128,
+                    ZXing.BarcodeFormat.CODE_39,
+                    ZXing.BarcodeFormat.UPC_A
+                ]);
+                
+                codeReader = new ZXing.BrowserMultiFormatReader(hints);
+                log('✅ Lector creado', 'success');
+                
+                // Listar cámaras
+                const devices = await codeReader.listVideoInputDevices();
+                log(`📷 Cámaras encontradas: ${devices.length}`, 'info');
+                
+                devices.forEach((device, i) => {
+                    log(`  ${i + 1}. ${device.label || device.deviceId}`, 'info');
+                });
+                
+                if (devices.length === 0) {
+                    log('❌ No hay cámaras disponibles', 'error');
+                    alert('No se encontró ninguna cámara');
+                    return;
+                }
+                
+                // Iniciar escaneo
+                const selectedDevice = devices[0].deviceId;
+                log(`🎥 Usando: ${devices[0].label || 'Cámara predeterminada'}`, 'info');
+                log('🔍 Buscando códigos de barras...', 'info');
+                log('💡 Acerca un código de barras a la cámara', 'info');
+                
+                scanning = true;
+                let scanCount = 0;
+                
+                codeReader.decodeFromVideoDevice(selectedDevice, 'video', (result, error) => {
+                    scanCount++;
+                    
+                    if (scanCount % 10 === 0) {
+                        log(`⏳ Intentos: ${scanCount}`, 'info');
+                    }
+                    
+                    if (result) {
+                        log(`🎉 ¡CÓDIGO DETECTADO!`, 'success');
+                        log(`📊 Formato: ${ZXing.BarcodeFormat[result.format]}`, 'success');
+                        log(`🔢 Código: ${result.text}`, 'success');
+                        
+                        document.getElementById('result').style.display = 'block';
+                        document.getElementById('result').innerHTML = 
+                            `✅ Código: <strong>${result.text}</strong><br>` +
+                            `Formato: ${ZXing.BarcodeFormat[result.format]}`;
+                        
+                        // Feedback visual
+                        document.getElementById('video').style.border = '5px solid green';
+                        setTimeout(() => {
+                            document.getElementById('video').style.border = '3px solid #333';
+                        }, 1000);
+                    }
+                    
+                    if (error && error.name !== 'NotFoundException') {
+                        log(`⚠️ Error: ${error.name} - ${error.message}`, 'error');
+                    }
+                });
+                
+                log('✅ Escáner activo', 'success');
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                console.error(error);
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        function stopScanner() {
+            if (codeReader) {
+                codeReader.reset();
+                log('⏹️ Escáner detenido', 'info');
+                scanning = false;
+            }
+        }
+    </script>
+</body>
+</html>

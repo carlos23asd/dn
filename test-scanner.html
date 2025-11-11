@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Escáner Simple</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        video { width: 100%; max-width: 500px; border: 2px solid #333; }
+        button { padding: 10px 20px; font-size: 16px; margin: 10px 0; }
+        .result { background: #f0f0f0; padding: 15px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Test de Escáner ZXing</h1>
+    <div id="status"></div>
+    <button onclick="testScanner()">Iniciar Escáner</button>
+    <button onclick="stopScanner()">Detener</button>
+    <video id="video" autoplay></video>
+    <div id="result" class="result"></div>
+
+    <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
+    <script>
+        let codeReader = null;
+        
+        window.addEventListener('load', function() {
+            const status = document.getElementById('status');
+            if (typeof ZXing !== 'undefined') {
+                status.innerHTML = '<p style="color: green;">✅ ZXing cargado correctamente</p>';
+                console.log('ZXing:', ZXing);
+            } else {
+                status.innerHTML = '<p style="color: red;">❌ ZXing NO cargado</p>';
+            }
+        });
+        
+        function testScanner() {
+            console.log('Iniciando test...');
+            
+            if (typeof ZXing === 'undefined') {
+                alert('ZXing no está disponible');
+                return;
+            }
+            
+            codeReader = new ZXing.BrowserMultiFormatReader();
+            
+            codeReader.listVideoInputDevices()
+                .then(devices => {
+                    console.log('Cámaras:', devices);
+                    if (devices.length === 0) {
+                        alert('No hay cámaras');
+                        return;
+                    }
+                    
+                    codeReader.decodeFromVideoDevice(devices[0].deviceId, 'video', (result, err) => {
+                        if (result) {
+                            document.getElementById('result').innerHTML = 
+                                '<strong>Código detectado:</strong> ' + result.text;
+                            console.log('Código:', result.text);
+                        }
+                    });
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('Error: ' + err.message);
+                });
+        }
+        
+        function stopScanner() {
+            if (codeReader) {
+                codeReader.reset();
+            }
+        }
+    </script>
+</body>
+</html>

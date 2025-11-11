@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Connection</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background: #f0f0f0;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test de Conexión Supabase</h1>
+    
+    <div id="config" class="result"></div>
+    
+    <button onclick="testConnection()">1. Test Conexión</button>
+    <button onclick="testUsers()">2. Test Tabla Users</button>
+    <button onclick="testProducts()">3. Test Tabla Products</button>
+    <button onclick="testLogin()">4. Test Login (admin/admin)</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+        
+        // Mostrar configuración
+        document.getElementById('config').innerHTML = `
+            <h3>Configuración:</h3>
+            <p><strong>URL:</strong> ${SUPABASE_CONFIG.url}</p>
+            <p><strong>Key:</strong> ${SUPABASE_CONFIG.anonKey.substring(0, 20)}...</p>
+        `;
+        
+        function addResult(title, content, isError = false) {
+            const div = document.createElement('div');
+            div.className = 'result ' + (isError ? 'error' : 'success');
+            div.innerHTML = `<h3>${title}</h3><pre>${content}</pre>`;
+            document.getElementById('results').appendChild(div);
+        }
+        
+        async function testConnection() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('count');
+                
+                if (error) throw error;
+                
+                addResult('✅ Conexión exitosa', 'La conexión a Supabase funciona correctamente');
+            } catch (error) {
+                addResult('❌ Error de conexión', error.message, true);
+            }
+        }
+        
+        async function testUsers() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('*');
+                
+                if (error) throw error;
+                
+                addResult('✅ Tabla Users', `Encontrados ${data.length} usuarios:\n${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                addResult('❌ Error en tabla Users', error.message + '\n\n¿Ejecutaste el script SQL en Supabase?', true);
+            }
+        }
+        
+        async function testProducts() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('*');
+                
+                if (error) throw error;
+                
+                addResult('✅ Tabla Products', `Encontrados ${data.length} productos:\n${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                addResult('❌ Error en tabla Products', error.message + '\n\n¿Ejecutaste el script SQL en Supabase?', true);
+            }
+        }
+        
+        async function testLogin() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .eq('username', 'admin')
+                    .eq('password', 'admin')
+                    .single();
+                
+                if (error) throw error;
+                
+                if (data) {
+                    addResult('✅ Login exitoso', `Usuario encontrado:\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    addResult('❌ Login fallido', 'Usuario no encontrado', true);
+                }
+            } catch (error) {
+                addResult('❌ Error en login', error.message, true);
+            }
+        }
+    </script>
+</body>
+</html>
