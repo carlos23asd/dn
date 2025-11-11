@@ -46,6 +46,18 @@ function showError(message) {
     alert('Error: ' + message);
 }
 
+// Formatear moneda a pesos colombianos (COP)
+function formatCurrency(amount) {
+    const number = parseFloat(amount);
+    if (isNaN(number)) return '$0';
+    
+    // Formato colombiano: 1.000.000,00
+    return '$' + number.toLocaleString('es-CO', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    });
+}
+
 // Login
 async function handleLogin(e) {
     e.preventDefault();
@@ -360,19 +372,19 @@ function updateCart() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${item.name}</td>
-            <td>$${parseFloat(item.price).toFixed(2)}</td>
+            <td>${formatCurrency(item.price)}</td>
             <td>
                 <button onclick="changeQuantity(${index}, -1)">-</button>
                 ${item.quantity}
                 <button onclick="changeQuantity(${index}, 1)">+</button>
             </td>
-            <td>$${subtotal.toFixed(2)}</td>
+            <td>${formatCurrency(subtotal)}</td>
             <td><button class="delete-btn action-btn" onclick="removeFromCart(${index})">Eliminar</button></td>
         `;
         cartBody.appendChild(row);
     });
     
-    document.getElementById('cartTotal').textContent = total.toFixed(2);
+    document.getElementById('cartTotal').textContent = formatCurrency(total).replace('$', '');
 }
 
 async function changeQuantity(index, change) {
@@ -473,7 +485,7 @@ async function finalizeSale() {
             if (stockError) throw stockError;
         }
         
-        alert(`Venta finalizada. Total: $${total.toFixed(2)}`);
+        alert(`Venta finalizada. Total: ${formatCurrency(total)}`);
         
         cart = [];
         updateCart();
@@ -555,7 +567,7 @@ async function loadProducts() {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${product.name}</td>
-                <td>$${parseFloat(product.price).toFixed(2)}</td>
+                <td>${formatCurrency(product.price)}</td>
                 <td>${product.stock}</td>
                 <td>${product.barcode}</td>
                 <td>
@@ -837,7 +849,7 @@ async function updateReports() {
         if (todayError) throw todayError;
         
         const todayTotal = todaySales.reduce((sum, sale) => sum + parseFloat(sale.total), 0);
-        document.getElementById('todaySales').textContent = todayTotal.toFixed(2);
+        document.getElementById('todaySales').textContent = formatCurrency(todayTotal).replace('$', '');
         document.getElementById('todayCount').textContent = todaySales.length;
         
         // Ventas de ayer
@@ -849,7 +861,7 @@ async function updateReports() {
         if (yesterdayError) throw yesterdayError;
         
         const yesterdayTotal = yesterdaySales.reduce((sum, sale) => sum + parseFloat(sale.total), 0);
-        document.getElementById('yesterdaySales').textContent = yesterdayTotal.toFixed(2);
+        document.getElementById('yesterdaySales').textContent = formatCurrency(yesterdayTotal).replace('$', '');
         document.getElementById('yesterdayCount').textContent = yesterdaySales.length;
         
         // Ventas del mes
@@ -860,7 +872,7 @@ async function updateReports() {
         if (monthError) throw monthError;
         
         const monthTotal = monthSales.reduce((sum, sale) => sum + parseFloat(sale.total), 0);
-        document.getElementById('monthSales').textContent = monthTotal.toFixed(2);
+        document.getElementById('monthSales').textContent = formatCurrency(monthTotal).replace('$', '');
         document.getElementById('monthCount').textContent = monthSales.length;
         
         hideLoading();
@@ -892,9 +904,9 @@ async function loadSalesHistory() {
             const date = new Date(sale.created_at);
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${date.toLocaleDateString()}</td>
-                <td>${date.toLocaleTimeString()}</td>
-                <td>$${parseFloat(sale.total).toFixed(2)}</td>
+                <td>${date.toLocaleDateString('es-CO')}</td>
+                <td>${date.toLocaleTimeString('es-CO')}</td>
+                <td>${formatCurrency(sale.total)}</td>
                 <td>${sale.sale_items.length} productos</td>
                 <td><button class="view-btn action-btn" onclick='showSaleDetail(${JSON.stringify(sale).replace(/'/g, "&apos;")})'>Ver</button></td>
             `;
@@ -919,12 +931,12 @@ function showSaleDetail(sale) {
         html += `
             <div class="sale-detail-item">
                 <span>${item.product_name} x${item.quantity}</span>
-                <span>$${parseFloat(item.subtotal).toFixed(2)}</span>
+                <span>${formatCurrency(item.subtotal)}</span>
             </div>
         `;
     });
     
-    html += `<div class="sale-detail-total">Total: $${parseFloat(sale.total).toFixed(2)}</div>`;
+    html += `<div class="sale-detail-total">Total: ${formatCurrency(sale.total)}</div>`;
     
     content.innerHTML = html;
     modal.classList.add('active');
@@ -933,4 +945,5 @@ function showSaleDetail(sale) {
 function closeSaleDetailModal() {
     document.getElementById('saleDetailModal').classList.remove('active');
 }
+
 

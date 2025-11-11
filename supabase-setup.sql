@@ -42,13 +42,13 @@ CREATE TABLE sale_items (
 INSERT INTO users (username, password) 
 VALUES ('admin', 'admin');
 
--- Insertar productos de ejemplo
+-- Insertar productos de ejemplo (precios en pesos colombianos)
 INSERT INTO products (name, price, stock, barcode) VALUES
-('Coca Cola 500ml', 2.50, 50, '7501234567890'),
-('Pan Blanco', 1.20, 30, '7501234567891'),
-('Leche 1L', 3.80, 25, '7501234567892'),
-('Arroz 1kg', 4.50, 40, '7501234567893'),
-('Aceite 1L', 5.20, 20, '7501234567894');
+('Coca Cola 500ml', 3500, 50, '7501234567890'),
+('Pan Blanco', 2000, 30, '7501234567891'),
+('Leche 1L', 5500, 25, '7501234567892'),
+('Arroz 1kg', 8000, 40, '7501234567893'),
+('Aceite 1L', 12000, 20, '7501234567894');
 
 -- Habilitar Row Level Security (RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
