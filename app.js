@@ -151,14 +151,14 @@ function startScanner() {
             
             // Mostrar todas las cámaras disponibles
             videoInputDevices.forEach((device, index) => {
-                console.log(`  ${index}: ${device.label || device.deviceId}`);
+                console.log(`  ${index + 1}. ${device.label || device.deviceId}`);
             });
             
-            // Buscar cámara trasera (prioridad)
-            let selectedDevice = null;
+            // Buscar cámara trasera - IGUAL QUE test-simple.html
+            let selectedDeviceId = videoInputDevices[0].deviceId;
+            let selectedDeviceLabel = videoInputDevices[0].label || 'Cámara 1';
             
-            // Estrategia 1: Buscar por palabras clave en el label
-            selectedDevice = videoInputDevices.find(device => {
+            const backCamera = videoInputDevices.find(device => {
                 const label = device.label.toLowerCase();
                 return label.includes('back') || 
                        label.includes('rear') || 
@@ -168,19 +168,20 @@ function startScanner() {
                        label.includes('facing back');
             });
             
-            // Estrategia 2: Si hay múltiples cámaras, la trasera suele ser la última o segunda
-            if (!selectedDevice && videoInputDevices.length > 1) {
-                selectedDevice = videoInputDevices[videoInputDevices.length - 1];
-                console.log('⚠️ No se encontró cámara trasera por nombre, usando última cámara');
-            }
-            
-            // Estrategia 3: Usar la primera disponible
-            if (!selectedDevice) {
-                selectedDevice = videoInputDevices[0];
+            if (backCamera) {
+                selectedDeviceId = backCamera.deviceId;
+                selectedDeviceLabel = backCamera.label;
+                console.log('📱 Usando cámara trasera:', backCamera.label);
+            } else if (videoInputDevices.length > 1) {
+                // Si hay múltiples cámaras, usar la última
+                selectedDeviceId = videoInputDevices[videoInputDevices.length - 1].deviceId;
+                selectedDeviceLabel = videoInputDevices[videoInputDevices.length - 1].label;
+                console.log('⚠️ Usando última cámara (probablemente trasera)');
+            } else {
                 console.log('⚠️ Usando primera cámara disponible');
             }
             
-            console.log('✅ Cámara seleccionada:', selectedDevice.label || selectedDevice.deviceId);
+            console.log('✅ Cámara seleccionada:', selectedDeviceLabel);
             console.log('🔍 Escaneando... Acerca el código de barras a la cámara');
             
             // Poblar selector de cámaras
@@ -192,7 +193,7 @@ function startScanner() {
                 const option = document.createElement('option');
                 option.value = device.deviceId;
                 option.text = device.label || `Cámara ${index + 1}`;
-                if (device.deviceId === selectedDevice.deviceId) {
+                if (device.deviceId === selectedDeviceId) {
                     option.selected = true;
                 }
                 cameraSelect.appendChild(option);
@@ -207,7 +208,8 @@ function startScanner() {
             let lastScannedTime = 0;
             
             // Usar el deviceId de la cámara seleccionada
-            codeReader.decodeFromVideoDevice(selectedDevice.deviceId, 'video', (result, err) => {
+            console.log('🎥 Iniciando decodificación con deviceId:', selectedDeviceId);
+            codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
                 if (result) {
                     const now = Date.now();
                     // Evitar escaneos duplicados en menos de 2 segundos
@@ -700,10 +702,11 @@ function scanBarcodeForProduct() {
                 console.log(`  ${index}: ${device.label || device.deviceId}`);
             });
             
-            // Buscar cámara trasera
-            let selectedDevice = null;
+            // Buscar cámara trasera - IGUAL QUE test-simple.html
+            let selectedDeviceId = videoInputDevices[0].deviceId;
+            let selectedDeviceLabel = videoInputDevices[0].label || 'Cámara 1';
             
-            selectedDevice = videoInputDevices.find(device => {
+            const backCamera = videoInputDevices.find(device => {
                 const label = device.label.toLowerCase();
                 return label.includes('back') || 
                        label.includes('rear') || 
@@ -713,19 +716,19 @@ function scanBarcodeForProduct() {
                        label.includes('facing back');
             });
             
-            // Si hay múltiples cámaras, usar la última
-            if (!selectedDevice && videoInputDevices.length > 1) {
-                selectedDevice = videoInputDevices[videoInputDevices.length - 1];
+            if (backCamera) {
+                selectedDeviceId = backCamera.deviceId;
+                selectedDeviceLabel = backCamera.label;
+                console.log('📱 Usando cámara trasera:', backCamera.label);
+            } else if (videoInputDevices.length > 1) {
+                selectedDeviceId = videoInputDevices[videoInputDevices.length - 1].deviceId;
+                selectedDeviceLabel = videoInputDevices[videoInputDevices.length - 1].label;
                 console.log('⚠️ Usando última cámara (probablemente trasera)');
-            }
-            
-            // Usar la primera disponible
-            if (!selectedDevice) {
-                selectedDevice = videoInputDevices[0];
+            } else {
                 console.log('⚠️ Usando primera cámara');
             }
             
-            console.log('✅ Cámara seleccionada:', selectedDevice.label || selectedDevice.deviceId);
+            console.log('✅ Cámara seleccionada:', selectedDeviceLabel);
             console.log('🔍 Escaneando producto...');
             
             // Poblar selector de cámaras para productos
@@ -737,7 +740,7 @@ function scanBarcodeForProduct() {
                 const option = document.createElement('option');
                 option.value = device.deviceId;
                 option.text = device.label || `Cámara ${index + 1}`;
-                if (device.deviceId === selectedDevice.deviceId) {
+                if (device.deviceId === selectedDeviceId) {
                     option.selected = true;
                 }
                 productCameraSelect.appendChild(option);
@@ -748,7 +751,8 @@ function scanBarcodeForProduct() {
                 productCameraSelector.style.display = 'block';
             }
             
-            productCodeReader.decodeFromVideoDevice(selectedDevice.deviceId, 'productVideo', (result, err) => {
+            console.log('🎥 Iniciando decodificación de producto con deviceId:', selectedDeviceId);
+            productCodeReader.decodeFromVideoDevice(selectedDeviceId, 'productVideo', (result, err) => {
                 if (result) {
                     console.log('✅ Código detectado:', result.text);
                     
