@@ -609,7 +609,7 @@ async function finalizeSale() {
             const { error: itemError } = await supabaseClient                 .from('sale_items')
                 .insert({
                     sale_id: sale.id,
-                    product_id: item.id,
+                    product_id: item.isCustom ? null : item.id, // null para productos personalizados
                     product_name: item.name,
                     quantity: item.quantity,
                     price: item.price,
@@ -618,12 +618,14 @@ async function finalizeSale() {
             
             if (itemError) throw itemError;
             
-            // Actualizar stock
-            const { error: stockError } = await supabaseClient                 .from('products')
-                .update({ stock: item.stock - item.quantity })
-                .eq('id', item.id);
-            
-            if (stockError) throw stockError;
+            // Actualizar stock solo si NO es producto personalizado
+            if (!item.isCustom) {
+                const { error: stockError } = await supabaseClient                     .from('products')
+                    .update({ stock: item.stock - item.quantity })
+                    .eq('id', item.id);
+                
+                if (stockError) throw stockError;
+            }
         }
         
         alert(`Venta finalizada. Total: ${formatCurrency(total)}`);
@@ -1086,6 +1088,89 @@ function showSaleDetail(sale) {
 
 function closeSaleDetailModal() {
     document.getElementById('saleDetailModal').classList.remove('active');
+}
+
+// Producto personalizado
+function showCustomProductModal() {
+    document.getElementById('customProductModal').classList.add('active');
+    document.getElementById('customProductForm').reset();
+    // Enfocar el campo de precio
+    setTimeout(() => {
+        document.getElementById('customProductPrice').focus();
+    }, 100);
+}
+
+function closeCustomProductModal() {
+    document.getElementById('customProductModal').classList.remove('active');
+    document.getElementById('customProductForm').reset();
+}
+
+function addCustomProduct(event) {
+    event.preventDefault();
+    
+    const name = document.getElementById('customProductName').value.trim() || 'Producto personalizado';
+    const price = parseFloat(document.getElementById('customProductPrice').value);
+    const quantity = parseInt(document.getElementById('customProductQuantity').value);
+    
+    if (isNaN(price) || price <= 0) {
+        alert('Por favor ingrese un precio válido');
+        return;
+    }
+    
+    if (isNaN(quantity) || quantity <= 0) {
+        alert('Por favor ingrese una cantidad válida');
+        return;
+    }
+    
+    // Crear un producto temporal (no se guarda en la base de datos)
+    const customProduct = {
+        id: 'custom_' + Date.now(), // ID temporal único
+        name: name,
+        price: price,
+        stock: 999, // Stock ficticio alto para que no haya problemas
+        barcode: 'CUSTOM',
+        quantity: quantity,
+        isCustom: true // Marca para identificar productos personalizados
+    };
+    
+    // Agregar al carrito
+    cart.push(customProduct);
+    
+    updateCart();
+    closeCustomProductModal();
+    
+    // Mostrar confirmación
+    const message = `✓ Agregado: ${name} - ${formatCurrency(price)} x${quantity}`;
+    showTemporaryMessage(message);
+}
+
+function showTemporaryMessage(message) {
+    // Crear elemento de mensaje
+    const messageDiv = document.createElement('div');
+    messageDiv.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 5px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        z-index: 10000;
+        font-size: 16px;
+        animation: slideIn 0.3s ease-out;
+    `;
+    messageDiv.textContent = message;
+    
+    document.body.appendChild(messageDiv);
+    
+    // Remover después de 3 segundos
+    setTimeout(() => {
+        messageDiv.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => {
+            document.body.removeChild(messageDiv);
+        }, 300);
+    }, 3000);
 }
 
 
